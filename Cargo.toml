@@ -1,0 +1,11 @@
+[package]
+name = "boyl"
+version = "0.1.0"
+authors = ["Miguel Murça <mikeevmm@github>"]
+edition = "2018"
+
+[dependencies]
+clap = "~2.33.3"
+colored = "~2.0.0"
+num-traits = "~0.2.14"
+shellexpand = "~2.1.0"

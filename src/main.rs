@@ -13,7 +13,10 @@ use std::{
     path::{self, PathBuf},
 };
 
+mod template;
 mod config;
+
+const VERSION: &str = "0.0.1";
 
 #[derive(Debug)]
 enum Verbosity {
@@ -72,7 +75,7 @@ fn default_config_dir() -> PathBuf {
 
 fn main() {
     let matches = App::new("boyl")
-        .version("1.0")
+        .version(VERSION)
         .author("Miguel Murça <zvthryzhepn+rot13@gmail.com>")
         .about("Quickly create boilerplate projects and templates.")
         .setting(AppSettings::SubcommandRequiredElseHelp)
@@ -154,14 +157,12 @@ fn main() {
             user_path_to_path(user_path).unwrap()
         });
 
-    let config = match config::load_config(&config_dir) {
-        Ok(config) => config.unwrap_or_else(config::Config::default),
+    let config = match config::LoadedConfig::load_config(config_dir) {
+        Ok(config) => config,
         Err(err) => {
             clap::Error::with_description(&err.to_string(), clap::ErrorKind::InvalidValue).exit()
         }
     };
-
-    println!("{:?}", config);
 
     match matches.subcommand() {
         ("new", Some(sub_matches)) => {}
@@ -170,7 +171,7 @@ fn main() {
         (name, _) => panic!("Unimplemented subcommand {}", name),
     }
 
-    if let Err(err) = config::write_config(config, &config_dir) {
+    if let Err(err) = config.write_config() {
         clap::Error::with_description(&err.to_string(), clap::ErrorKind::InvalidValue).exit()
     }
 }

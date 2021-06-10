@@ -13,8 +13,9 @@ use std::{
     path::{self, PathBuf},
 };
 
-mod template;
 mod config;
+mod list;
+mod template;
 
 const VERSION: &str = "0.0.1";
 
@@ -108,7 +109,7 @@ fn main() {
         )
         .subcommand(
             App::new("new")
-                .about("Creates a new boilerplate project.")
+                .about("Creates a new project.")
                 .arg(
                     Arg::with_name("TEMPLATE")
                         .help("The project template to use")
@@ -157,7 +158,7 @@ fn main() {
             user_path_to_path(user_path).unwrap()
         });
 
-    let config = match config::LoadedConfig::load_config(config_dir) {
+    let config = match config::LoadedConfig::load_from_path(config_dir) {
         Ok(config) => config,
         Err(err) => {
             clap::Error::with_description(&err.to_string(), clap::ErrorKind::InvalidValue).exit()
@@ -167,7 +168,12 @@ fn main() {
     match matches.subcommand() {
         ("new", Some(sub_matches)) => {}
         ("create", Some(sub_matches)) => {}
-        ("list", Some(sub_matches)) => {}
+        ("list", Some(sub_matches)) => {
+            if let Err(err) = list::list(&config) {
+                clap::Error::with_description(&err.to_string(), clap::ErrorKind::InvalidValue)
+                    .exit();
+            }
+        }
         (name, _) => panic!("Unimplemented subcommand {}", name),
     }
 

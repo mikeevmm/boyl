@@ -19,7 +19,18 @@ fn get_template_dir(config_path: &Path) -> PathBuf {
     config_path.join("templates")
 }
 
-#[derive(Clone, Debug, Serialize, Deserialize)]
+/// Configuration elements that persist between sessions;
+/// this struct is deserialized and serialized from/to a
+/// JSON file on program start/end.
+///
+/// This object should be agnostic to the location of the
+/// configuration file, and should instead represent an
+/// "in-memory" view of the program's configuration. For
+/// applications that are focused on the configuration as
+/// a file, [`LoadedConfig`] should be used. Furthermore,
+/// it is expected that a `Config` struct is never created
+/// explicitly, and rather derived from a `LoadedConfig`.
+#[derive(Serialize, Deserialize)]
 pub struct Config {
     version: String,
     templates: Vec<Template>,
@@ -35,7 +46,14 @@ impl Default for Config {
 }
 
 impl Config {
-    fn load_config(path: &Path) -> Result<Option<Config>, LoadConfigError> {
+    /// Deserialize a `Config` object from an in-disk `JSON` representation.
+    ///
+    /// # Returns
+    ///
+    /// If the specified serialized JSON file (as given by `path`) exists, this
+    /// function returns `Some(Config)`, containing the deserialized `Config`
+    /// struct. If the file does not exist, `None` is returned.
+    fn load_from_path(path: &Path) -> Result<Option<Config>, LoadConfigError> {
         let json_path = get_json_path(path);
         if !json_path.exists() {
             return Ok(None);
@@ -128,52 +146,29 @@ impl Display for WriteConfigError {
     }
 }
 
-pub enum TemplateScanError {
-    NotAFolder(String),
-    ReadDirError(io::Error, String),
-    DirEntryError(io::Error, String),
-}
-
-impl Display for TemplateScanError {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            TemplateScanError::NotAFolder(path) => {
-                write!(
-                    f,
-                    "The templates path ('{}') exists, but is not a directory!",
-                    path
-                )
-            }
-            TemplateScanError::ReadDirError(e, path) => {
-                write!(
-                    f,
-                    "Could not read the contentes of the templates directory ('{}'): \
-                    '{}'",
-                    path, e
-                )
-            }
-            TemplateScanError::DirEntryError(e, path) => {
-                write!(
-                    f,
-                    "Could not read content of the templates directory ('{}'): '{}'",
-                    path, e
-                )
-            }
-        }
-    }
-}
-
+/// Struct coupling the serializable, in-memory representation of the
+/// program's configuration `Config`, with information about its file
+/// representation.
 pub struct LoadedConfig {
     pub config: Config,
     path: PathBuf,
 }
 
 impl LoadedConfig {
-    pub fn load_config(path: PathBuf) -> Result<Self, LoadConfigError> {
-        let config = Config::load_config(&path)?.unwrap_or_default();
+    /// Load a configuration from a JSON path. The given path is expected
+    /// to exist up until to the penultimate component.
+    ///
+    /// If the specified file does not exist, a default configuration is
+    /// instantiated instead.
+    pub fn load_from_path(path: PathBuf) -> Result<Self, LoadConfigError> {
+        let config = Config::load_from_path(&path)?.unwrap_or_default();
         Ok(LoadedConfig { config, path })
     }
 
+    /// Serialize the configuration object to disk, according to the path
+    /// information in `LoadedConfig`.
+    ///
+    /// If the JSON file does not exist, it will be created.
     pub fn write_config(&self) -> Result<(), WriteConfigError> {
         let json_path = get_json_path(&self.path);
         if json_path.exists() && !json_path.is_file() {
@@ -186,49 +181,8 @@ impl LoadedConfig {
             Err(e) => return Err(WriteConfigError::FileError(e)),
         };
         let writer = BufWriter::new(json_file);
-        serde_json::to_writer(writer, &self.path).map_err(|e| {
+        serde_json::to_writer(writer, &self.config).map_err(|e| {
             WriteConfigError::BadSerialization(e, json_path.to_string_lossy().to_string())
         })
-    }
-
-    pub fn scan_templates(&mut self) -> Result<(), TemplateScanError> {
-        let templates_dir = get_template_dir(&self.path);
-        if templates_dir.exists() && !templates_dir.is_dir() {
-            return Err(TemplateScanError::NotAFolder(
-                templates_dir.to_string_lossy().to_string(),
-            ));
-        }
-        if !templates_dir.exists() {
-            return Ok(());
-        }
-        let items = match fs::read_dir(templates_dir.clone()) {
-            Ok(items) => items,
-            Err(err) => {
-                return Err(TemplateScanError::ReadDirError(
-                    err,
-                    templates_dir.to_string_lossy().to_string(),
-                ))
-            }
-        };
-        for item in items {
-            match item {
-                Ok(item) => {
-                    let item = item.path();
-                    if item.is_file() {
-                        continue;
-                    }
-                    let item_name = item.file_name().unwrap().to_string_lossy();
-
-                    // TODO!
-                }
-                Err(err) => {
-                    return Err(TemplateScanError::DirEntryError(
-                        err,
-                        templates_dir.to_string_lossy().to_string(),
-                    ))
-                }
-            }
-        }
-        Ok(())
     }
 }

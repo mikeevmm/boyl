@@ -7,14 +7,15 @@ extern crate serde_json;
 extern crate shellexpand;
 
 use clap::{App, AppSettings, Arg};
+use config::LoadedConfig;
 use num_traits::PrimInt;
 use std::{
     io,
     path::{self, PathBuf},
 };
 
+mod cmd;
 mod config;
-mod list;
 mod template;
 
 const VERSION: &str = "0.0.1";
@@ -74,10 +75,16 @@ fn default_config_dir() -> PathBuf {
     default_dir
 }
 
+fn write_config_or_fail(config: &LoadedConfig) {
+    if let Err(err) = config.write_config() {
+        clap::Error::with_description(&err.to_string(), clap::ErrorKind::InvalidValue).exit()
+    }
+}
+
 fn main() {
     let matches = App::new("boyl")
         .version(VERSION)
-        .author("Miguel Murça <zvthryzhepn+rot13@gmail.com>")
+        .author("Miguel Murça <zvthryzhepn+obly+rot13@gmail.com>")
         .about("Quickly create boilerplate projects and templates.")
         .setting(AppSettings::SubcommandRequiredElseHelp)
         .arg(
@@ -102,16 +109,29 @@ fn main() {
                     }
                 }),
         )
-        .subcommand(App::new("list").about("Lists the available projects."))
+        .subcommand(App::new(cmd::list::CMD_STR).about("Lists the available templates."))
         .subcommand(
-            App::new("make")
+            App::new(cmd::tree::CMD_STR)
+                .about("Shows the tree structure of a template.")
+                .arg(
+                    Arg::with_name(cmd::make::TEMPLATE_ARG)
+                        .help("The project template to examine")
+                        .long_help(
+                            "The project template to examine. Should be one \
+                            of the template names listed with `list`.",
+                        )
+                        .required(true),
+                ),
+        )
+        .subcommand(
+            App::new(cmd::make::CMD_STR)
                 .about("Interactively generates a new template from the current folder."),
         )
         .subcommand(
-            App::new("new")
+            App::new(cmd::new::CMD_STR)
                 .about("Creates a new project.")
                 .arg(
-                    Arg::with_name("TEMPLATE")
+                    Arg::with_name(cmd::new::TEMPLATE_ARG)
                         .help("The project template to use")
                         .long_help(
                             "The project template to use. Use the `list` command \
@@ -121,7 +141,7 @@ fn main() {
                         .required(true),
                 )
                 .arg(
-                    Arg::with_name("NAME")
+                    Arg::with_name(cmd::new::NAME_ARG)
                         .help("The name for the new project")
                         .long_help(
                             "The name for the new project. \
@@ -130,7 +150,7 @@ fn main() {
                         .required(true),
                 )
                 .arg(
-                    Arg::with_name("LOCATION")
+                    Arg::with_name(cmd::new::LOCATION_ARG)
                         .default_value(".")
                         .help("Where to create the new project")
                         .long_help(
@@ -152,13 +172,13 @@ fn main() {
         .get_matches();
 
     let verbosity = Verbosity::from(matches.occurrences_of("v"));
-    let config_dir = matches
+    let config_path = matches
         .value_of("config_dir")
         .map_or_else(default_config_dir, |user_path| {
             user_path_to_path(user_path).unwrap()
         });
 
-    let config = match config::LoadedConfig::load_from_path(config_dir) {
+    let mut config = match config::LoadedConfig::load_from_path(config_path) {
         Ok(config) => config,
         Err(err) => {
             clap::Error::with_description(&err.to_string(), clap::ErrorKind::InvalidValue).exit()
@@ -166,18 +186,18 @@ fn main() {
     };
 
     match matches.subcommand() {
-        ("new", Some(sub_matches)) => {}
-        ("create", Some(sub_matches)) => {}
-        ("list", Some(sub_matches)) => {
-            if let Err(err) = list::list(&config) {
-                clap::Error::with_description(&err.to_string(), clap::ErrorKind::InvalidValue)
-                    .exit();
-            }
+        (cmd::new::CMD_STR, Some(sub_matches)) => {
+            todo!()
+        }
+        (cmd::make::CMD_STR, Some(sub_matches)) => {
+            todo!()
+        }
+        (cmd::list::CMD_STR, Some(_sub_matches)) => {
+            cmd::list::list(&config);
+        }
+        (cmd::tree::CMD_STR, Some(sub_matches)) => {
+            todo!()
         }
         (name, _) => panic!("Unimplemented subcommand {}", name),
-    }
-
-    if let Err(err) = config.write_config() {
-        clap::Error::with_description(&err.to_string(), clap::ErrorKind::InvalidValue).exit()
     }
 }

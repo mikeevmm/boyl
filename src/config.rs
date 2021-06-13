@@ -1,8 +1,10 @@
 use crate::template::Template;
 use serde::{Deserialize, Serialize};
 use std::{
+    collections::{hash_map::DefaultHasher, BTreeMap},
     fmt::Display,
     fs,
+    hash::{Hash, Hasher},
     io::{self, BufReader, BufWriter},
     path::{Path, PathBuf},
 };
@@ -19,6 +21,8 @@ fn get_template_dir(config_path: &Path) -> PathBuf {
     config_path.join("templates")
 }
 
+pub type TemplateKey = u64;
+
 /// Configuration elements that persist between sessions;
 /// this struct is deserialized and serialized from/to a
 /// JSON file on program start/end.
@@ -32,20 +36,46 @@ fn get_template_dir(config_path: &Path) -> PathBuf {
 /// explicitly, and rather derived from a `LoadedConfig`.
 #[derive(Serialize, Deserialize)]
 pub struct Config {
-    version: String,
-    templates: Vec<Template>,
+    pub version: String,
+    pub templates: BTreeMap<TemplateKey, Template>,
 }
 
 impl Default for Config {
     fn default() -> Self {
         Config {
-            templates: vec![],
+            templates: BTreeMap::new(),
             version: super::VERSION.to_string(),
         }
     }
 }
 
 impl Config {
+    pub fn get_template_key(template: &Template) -> u64 {
+        let mut hasher = DefaultHasher::default();
+        template.name.hash(&mut hasher);
+        hasher.finish()
+    }
+
+    /// Inserts a template into the `config`'s `templates` `BTreeMap`.
+    /// The key is calculated from the template by the same mechanism
+    /// as `Config::get_template_key`.
+    ///
+    /// # Returns
+    ///
+    /// Because keys should be unique for significantly different
+    /// templates, if the key is already found in the tree, no insertion
+    /// is made an an `Err` is returned. Otherwise, the template is
+    /// inserted in the tree an `Ok` is returned. Both `Result`s contain
+    /// the key of the given template.
+    pub fn insert_template(&mut self, template: Template) -> Result<TemplateKey, TemplateKey> {
+        let key = Config::get_template_key(&template);
+        if self.templates.get(&key).is_some() {
+            return Err(key);
+        }
+        self.templates.insert(key, template).unwrap();
+        Ok(key)
+    }
+
     /// Deserialize a `Config` object from an in-disk `JSON` representation.
     ///
     /// # Returns
@@ -151,7 +181,7 @@ impl Display for WriteConfigError {
 /// representation.
 pub struct LoadedConfig {
     pub config: Config,
-    path: PathBuf,
+    pub path: PathBuf,
 }
 
 impl LoadedConfig {

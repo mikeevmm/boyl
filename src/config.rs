@@ -89,9 +89,7 @@ impl Config {
             return Ok(None);
         }
         if !json_path.is_file() {
-            return Err(LoadConfigError::NotAFile(
-                json_path.to_string_lossy().to_string(),
-            ));
+            return Err(LoadConfigError::NotAFile(json_path.display().to_string()));
         }
         let json_file = match fs::File::open(json_path.clone()) {
             Ok(f) => f,
@@ -99,9 +97,7 @@ impl Config {
         };
         let reader = BufReader::new(json_file);
         serde_json::from_reader::<_, Config>(reader)
-            .map_err(|e| {
-                LoadConfigError::BadDeserialization(e, json_path.to_string_lossy().to_string())
-            })
+            .map_err(|e| LoadConfigError::BadDeserialization(e, json_path.display().to_string()))
             .map(Some)
     }
 }
@@ -202,17 +198,14 @@ impl LoadedConfig {
     pub fn write_config(&self) -> Result<(), WriteConfigError> {
         let json_path = get_json_path(&self.path);
         if json_path.exists() && !json_path.is_file() {
-            return Err(WriteConfigError::NotAFile(
-                json_path.to_string_lossy().to_string(),
-            ));
+            return Err(WriteConfigError::NotAFile(json_path.display().to_string()));
         }
         let json_file = match fs::File::create(json_path.clone()) {
             Ok(f) => f,
             Err(e) => return Err(WriteConfigError::FileError(e)),
         };
         let writer = BufWriter::new(json_file);
-        serde_json::to_writer(writer, &self.config).map_err(|e| {
-            WriteConfigError::BadSerialization(e, json_path.to_string_lossy().to_string())
-        })
+        serde_json::to_writer(writer, &self.config)
+            .map_err(|e| WriteConfigError::BadSerialization(e, json_path.display().to_string()))
     }
 }

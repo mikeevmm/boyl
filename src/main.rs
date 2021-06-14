@@ -14,6 +14,7 @@ use std::{
     path::{self, PathBuf},
 };
 
+mod boolprompt;
 mod cmd;
 mod config;
 mod template;
@@ -114,7 +115,7 @@ fn main() {
             App::new(cmd::tree::CMD_STR)
                 .about("Shows the tree structure of a template.")
                 .arg(
-                    Arg::with_name(cmd::make::TEMPLATE_ARG)
+                    Arg::with_name(cmd::new::TEMPLATE_ARG)
                         .help("The project template to examine")
                         .long_help(
                             "The project template to examine. Should be one \
@@ -189,10 +190,11 @@ fn main() {
         (cmd::new::CMD_STR, Some(sub_matches)) => {
             todo!()
         }
-        (cmd::make::CMD_STR, Some(sub_matches)) => {
-            todo!()
+        (cmd::make::CMD_STR, Some(_)) => {
+            cmd::make::make();
+            write_config_or_fail(&config);
         }
-        (cmd::list::CMD_STR, Some(_sub_matches)) => {
+        (cmd::list::CMD_STR, Some(_)) => {
             cmd::list::list(&config);
         }
         (cmd::tree::CMD_STR, Some(sub_matches)) => {

@@ -14,10 +14,10 @@ use std::{
     path::{self, PathBuf},
 };
 
-mod boolprompt;
 mod cmd;
 mod config;
 mod template;
+mod full_ui;
 
 const VERSION: &str = "0.0.1";
 

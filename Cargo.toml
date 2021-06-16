@@ -22,4 +22,4 @@ features = ["derive"]
 
 [dependencies.tokio]
 version = "~1.6.1"
-features = ["rt", "rt-multi-thread", "io-std", "time"]
+features = ["rt", "rt-multi-thread", "time", "sync"]

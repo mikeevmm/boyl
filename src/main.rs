@@ -17,7 +17,8 @@ use std::{
 mod cmd;
 mod config;
 mod template;
-mod full_ui;
+#[allow(dead_code)]
+mod ui;
 
 const VERSION: &str = "0.0.1";
 

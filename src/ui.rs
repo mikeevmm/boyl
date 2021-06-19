@@ -24,10 +24,16 @@ where
 {
     /// Called when a state is entered upon. If `Some(Duration)` is
     /// given, `on_tick` will be called every `Duration`. Otherwise,
-    /// `on_tick` will only be called when the state is entered.
+    /// `on_tick` can still be called in situations where a redraw
+    /// is required.
     fn require_ticking(&self) -> Option<Duration>;
+    /// Called upon input.
     fn on_key(&mut self, key: Key) -> Option<UiStateReaction<B>>;
+    /// Called upon a tick, which can happen at fixed intervals (as
+    /// specified in `require_ticking`), or when a redraw is required
+    /// for some reason.
     fn on_tick(&mut self) -> Option<UiStateReaction<B>>;
+    /// Draw the current state to the provided buffer.
     fn draw(&self, f: &mut Frame<B>);
 }
 
@@ -143,6 +149,32 @@ pub fn run_ui(starting_state: Box<dyn UiState<BackendInUse>>) {
         let tokio_runtime = tokio_runtime.clone();
         StateFsm::new(starting_state, event_tx, tokio_runtime)
     };
+
+    // The tokio task responsible for detecting terminal resizes. This is done
+    // in a bit of a funky way, where we just poll the terminal size every so
+    // often, and fire a `Tick` event when we detect that it has changed since
+    // the last poll. On any error, this task aborts.
+    tokio_runtime.spawn({
+        let event_tx = event_tx.clone();
+        async move {
+            let mut last_seen = match termion::terminal_size() {
+                Ok(val) => val,
+                Err(_) => return,
+            };
+            loop {
+                let new_size = match termion::terminal_size() {
+                    Ok(val) => val,
+                    Err(_) => return,
+                };
+                if last_seen != new_size && event_tx.send(FsmEvent::Tick).await.is_err() {
+                    // Main loop has hung up, goodbye!
+                    break;
+                }
+                last_seen = new_size;
+                sleep(Duration::from_millis(200)).await;
+            }
+        }
+    });
 
     // Thread responsible for listening to key events (which is exposed)
     // in a blocking iterator, and dispatch the events to the main loop.

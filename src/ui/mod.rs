@@ -11,6 +11,8 @@ use tui::{
 };
 
 pub mod layout;
+pub mod input;
+pub mod file;
 
 pub enum UiStateReaction {
     Exit,

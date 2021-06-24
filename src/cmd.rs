@@ -46,7 +46,6 @@ pub mod make {
     }
 
     mod ignore_ui {
-        use regex::Regex;
         use std::{
             cmp::{max, min},
             path::Path,
@@ -88,6 +87,7 @@ pub mod make {
         }
 
         pub struct IgnoreUi<'path> {
+            base_path: &'path Path,
             file_list: FileList<'path>,
             file_widget: FileListWidget,
             mode: UiMode,
@@ -96,13 +96,14 @@ pub mod make {
         impl<'path> IgnoreUi<'path> {
             pub fn new(base_path: &'path Path) -> Self {
                 IgnoreUi {
+                    base_path,
                     file_list: FileList::new(&base_path),
                     file_widget: FileListWidget::default(),
                     mode: UiMode::List,
                 }
             }
 
-            fn draw_help(&self, f: &mut tui::Frame<impl Backend>, size: Rect) -> Rect {
+            fn draw_help(&self, f: &mut tui::Frame<impl Backend>, buffer_rect: Rect) -> Rect {
                 let mut help_texts = vec![];
                 let mut help_boxes = vec![];
                 let mut make_help_box = |button: &'static str, info: &'static str| {
@@ -117,12 +118,18 @@ pub mod make {
                 make_help_box("O", "Open/Close folder");
                 make_help_box("X", "Exclude/Include file");
                 make_help_box("Z", "Exclude pattern");
+                make_help_box("R", "Reset");
                 make_help_box("Enter", "Finish");
 
-                let buffer_rect = size;
                 let positions = crate::ui::layout::distribute(buffer_rect.width, &help_boxes);
-                let new_height = positions.last().unwrap().1 - positions[0].1 + 1;
-                let start_y = max(buffer_rect.bottom() - new_height, buffer_rect.top());
+                let new_height = min(
+                    positions.last().unwrap().1 - positions[0].1 + 1,
+                    buffer_rect.height,
+                );
+                let start_y = max(
+                    buffer_rect.bottom().saturating_sub(new_height),
+                    buffer_rect.top(),
+                );
 
                 // Draw a green background (a bit hacky)
                 f.render_widget(
@@ -139,14 +146,16 @@ pub mod make {
                     }
 
                     let width = text.len() as u16;
-                    f.render_widget(Paragraph::new(text), Rect::new(x, y, width, 1));
+                    let height = min(1, buffer_rect.height);
+                    let y = min(y, buffer_rect.bottom().saturating_sub(1));
+                    f.render_widget(Paragraph::new(text), Rect::new(x, y, width, height));
                 }
 
                 Rect::new(
-                    size.left(),
-                    size.top(),
-                    size.width,
-                    size.height - new_height,
+                    buffer_rect.left(),
+                    buffer_rect.top(),
+                    buffer_rect.width,
+                    buffer_rect.height - new_height,
                 )
             }
 
@@ -204,7 +213,7 @@ pub mod make {
                 if self.file_list.highlight < self.file_widget.buffer_start {
                     self.file_widget.buffer_start = self.file_list.highlight;
                 } else if self.file_list.highlight
-                    > self.file_widget.buffer_start + size.height as usize - 1
+                    > (self.file_widget.buffer_start + size.height as usize).saturating_sub(1)
                 {
                     self.file_widget.buffer_start = self
                         .file_list
@@ -256,7 +265,8 @@ pub mod make {
                         file_name_style = file_name_style.fg(Color::Gray);
                     }
                     if list_elem.path.is_dir() {
-                        file_name_style = file_name_style.add_modifier(Modifier::BOLD);
+                        file_name_style =
+                            file_name_style.add_modifier(Modifier::BOLD | Modifier::ITALIC);
                     }
                     let indented_file_name =
                         format!("{}{}", " ".repeat(list_elem.depth), file_name);
@@ -267,9 +277,11 @@ pub mod make {
                 }
             }
 
-            fn ignore_pattern(&mut self, pattern: String) -> Result<(), regex::Error> {
-                let regex = Regex::new(&pattern)?;
-                self.file_list.exclude_pattern(regex);
+            fn ignore_pattern(
+                &mut self,
+                pattern: String,
+            ) -> Result<(), Box<dyn std::error::Error>> {
+                self.file_list.exclude_pattern(&pattern)?;
                 Ok(())
             }
         }
@@ -299,7 +311,10 @@ pub mod make {
                                     self.file_list.toggle_folder();
                                 }
                                 Key::Char('x') => {
-                                    self.file_list.exclude_file();
+                                    self.file_list.toggle_exclude_file();
+                                }
+                                Key::Char('r') => {
+                                    self.file_list = FileList::new(self.base_path);
                                 }
                                 Key::Char('z') => {
                                     self.mode =

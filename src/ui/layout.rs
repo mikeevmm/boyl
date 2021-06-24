@@ -1,4 +1,3 @@
-use regex::Regex;
 use std::{
     cell::RefCell,
     cmp::min,
@@ -241,7 +240,6 @@ struct FileListItem {
     /// files that are not directories.
     open: bool,
     path: PathBuf,
-    included: bool,
     depth: usize,
 }
 
@@ -261,6 +259,9 @@ pub struct FileList<'path> {
     /// previously, to at least one level of depth, and every direct child of this
     /// file has a key in `file_keys`.
     indexed: BTreeSet<Uuid>,
+    exclude_patterns: BTreeSet<glob::Pattern>,
+    exclude_exceptions: BTreeSet<Uuid>,
+    exclude_explicit: BTreeSet<Uuid>,
     pub highlight: usize,
 }
 
@@ -288,7 +289,6 @@ impl<'path> FileList<'path> {
                 parent: None,
                 open: false,
                 path: base_child.path(),
-                included: true,
                 depth: 0,
             };
             file_items.insert(key, item);
@@ -306,6 +306,9 @@ impl<'path> FileList<'path> {
             file_keys,
             file_list,
             indexed: BTreeSet::<Uuid>::new(),
+            exclude_patterns: BTreeSet::<glob::Pattern>::new(),
+            exclude_exceptions: BTreeSet::<Uuid>::new(),
+            exclude_explicit: BTreeSet::<Uuid>::new(),
             highlight: 0,
         }
     }
@@ -337,12 +340,59 @@ impl<'path> FileList<'path> {
         }
     }
 
-    pub fn exclude_file(&mut self) {
-        todo!()
+    pub fn toggle_exclude_file(&mut self) {
+        let file_key = self.file_list[self.highlight];
+
+        match self.is_included(&file_key) {
+            true => {
+                // We wish to exclude the file.
+                let was_exception = self.exclude_exceptions.remove(&file_key);
+                // If this file was not excluded only because it was an exception
+                // to a pattern, then we do not have to explicitly exclude the file,
+                // because some pattern already does.
+                if !was_exception {
+                    self.exclude_explicit.insert(file_key);
+                }
+            }
+            false => {
+                // We wish to include the fle.
+                let was_explicit = self.exclude_explicit.remove(&file_key);
+                // If this file was not explicitly excluded, then it was excluded
+                // as the result of a pattern, and should be included explicitly.
+                if !was_explicit {
+                    self.exclude_exceptions.insert(file_key);
+                }
+            }
+        };
     }
 
-    pub fn exclude_pattern(&mut self, pattern: Regex) {
-        todo!()
+    pub fn exclude_pattern(&mut self, pattern: &str) -> Result<(), Box<dyn std::error::Error>> {
+        let pattern = glob::Pattern::new(pattern)?;
+        // New ignore pattern was newly inserted, so any exceptions that match the rule are
+        // no longer exceptions.
+        // NOTE: This double iteration seems unavoidable, because `drain_filter` is not stabilized.
+        let remove_from_exceptions = self
+            .exclude_exceptions
+            .iter()
+            .copied()
+            .filter(|id| self.exclusion_pattern_matches(&pattern, id))
+            .collect::<Vec<Uuid>>();
+        for k in remove_from_exceptions {
+            self.exclude_exceptions.remove(&k);
+        }
+        // Any explicit exclusions that are covered by this pattern can be also be removed
+        let remove_from_explicit = self
+            .exclude_explicit
+            .iter()
+            .copied()
+            .filter(|id| self.exclusion_pattern_matches(&pattern, id))
+            .collect::<Vec<Uuid>>();
+        for k in remove_from_explicit {
+            self.exclude_explicit.remove(&k);
+        }
+        // Insert the new ignore pattern into the set (ignored if already there)
+        self.exclude_patterns.insert(pattern);
+        Ok(())
     }
 
     pub fn iter_paths(
@@ -351,12 +401,12 @@ impl<'path> FileList<'path> {
     ) -> impl Iterator<Item = FileListIterElement<'_>> + '_ {
         self.file_list[range]
             .iter()
-            .map(move |id| self.file_items.get(id).unwrap())
-            .map(move |item| {
+            .map(move |id| (id, self.file_items.get(id).unwrap()))
+            .map(move |(id, item)| {
                 let path = item.path.strip_prefix(self.base_path).unwrap();
                 FileListIterElement {
                     path,
-                    included: item.included,
+                    included: self.is_included(id),
                     depth: item.depth,
                 }
             })
@@ -364,6 +414,26 @@ impl<'path> FileList<'path> {
 
     pub fn len(&self) -> usize {
         self.file_list.len()
+    }
+
+    fn is_included(&self, uuid: &Uuid) -> bool {
+        let self_excluded = !self.exclude_exceptions.contains(uuid)
+            && (self.exclude_explicit.contains(uuid)
+                || self
+                    .exclude_patterns
+                    .iter()
+                    .any(|pattern| self.exclusion_pattern_matches(pattern, uuid)));
+
+        if self_excluded {
+            return false;
+        }
+
+        // A file can be excluded because a parent is excluded.
+        if let Some(parent) = self.file_items.get(uuid).unwrap().parent {
+            return self.is_included(&parent);
+        }
+
+        true
     }
 
     /// Inserts the contents to the indicated element in the `file_list` into the `file_list`,
@@ -437,7 +507,6 @@ impl<'path> FileList<'path> {
                 parent: Some(*file_key),
                 open: false,
                 path: child_dir.path(),
-                included: true,
                 depth: child_depth,
             };
             self.file_items.insert(key, item);
@@ -449,5 +518,17 @@ impl<'path> FileList<'path> {
         }
 
         self.indexed.insert(*file_key);
+    }
+
+    fn exclusion_pattern_matches(&self, pattern: &glob::Pattern, id: &Uuid) -> bool {
+        pattern.matches_path(
+            &self
+                .file_items
+                .get(id)
+                .unwrap()
+                .path
+                .strip_prefix(self.base_path)
+                .unwrap(),
+        )
     }
 }

@@ -3,8 +3,10 @@ extern crate serde;
 extern crate clap;
 extern crate dirs;
 extern crate num_traits;
+extern crate read_input;
 extern crate serde_json;
 extern crate shellexpand;
+extern crate tokio;
 
 use clap::{App, AppSettings, Arg};
 use config::LoadedConfig;

@@ -47,31 +47,48 @@ pub mod make {
 
     mod ignore_ui {
         use regex::Regex;
-        use std::{cmp::max, path::PathBuf};
+        use std::{
+            cmp::{max, min},
+            path::PathBuf,
+        };
         use termion::event::Key;
-        use tui::{backend::Backend, layout::Rect, style::{Color, Style}, widgets::{Block, Borders, Paragraph}};
+        use tui::{
+            backend::Backend,
+            layout::Rect,
+            style::{Color, Modifier, Style},
+            text::{Span, Spans},
+            widgets::{Block, Borders, Paragraph},
+        };
 
-        use crate::ui::{layout::VisualBox, UiState, UiStateReaction};
+        use crate::ui::{
+            layout::{InputField, VisualBox},
+            UiState, UiStateReaction,
+        };
 
-        enum IgnoreUiMode {
+        enum InputMode {
+            IgnorePattern,
+        }
+
+        enum UiMode {
             List,
-            Input,
+            Input(InputMode, InputField),
+            Error(String),
         }
 
         pub struct IgnoreUi<'paths> {
             base_path: PathBuf,
-            ignore_patterns: Vec<Regex>,
+            ignored: Vec<&'paths PathBuf>,
             open: Vec<&'paths PathBuf>,
-            mode: IgnoreUiMode,
+            mode: UiMode,
         }
 
         impl<'paths> IgnoreUi<'paths> {
             pub fn new(base_path: PathBuf) -> Self {
                 IgnoreUi {
                     base_path,
-                    ignore_patterns: vec![],
+                    ignored: vec![],
                     open: vec![],
-                    mode: IgnoreUiMode::List,
+                    mode: UiMode::List,
                 }
             }
 
@@ -89,7 +106,7 @@ pub mod make {
                 make_help_box("Down/K", "Move down in list");
                 make_help_box("O", "Open/Close folder");
                 make_help_box("X", "Exclude/Include file");
-                make_help_box("C", "Exclude pattern");
+                make_help_box("Z", "Exclude pattern");
                 make_help_box("Enter", "Finish");
 
                 let buffer_rect = size;
@@ -115,12 +132,72 @@ pub mod make {
                     f.render_widget(Paragraph::new(text), Rect::new(x, y, width, 1));
                 }
 
-                Rect::new(size.left(), size.top(), size.width, size.height - new_height)
+                Rect::new(
+                    size.left(),
+                    size.top(),
+                    size.width,
+                    size.height - new_height,
+                )
+            }
+
+            fn draw_prompt(
+                &self,
+                f: &mut tui::Frame<impl Backend>,
+                size: Rect,
+                input_field: &InputField,
+            ) -> Rect {
+                let prompt_rect = Rect::new(size.left(), size.bottom() - 1, size.width, 1);
+                let remaining = Rect::new(size.left(), size.top(), size.width, size.height - 1);
+
+                let prompt_text = if prompt_rect.width > 45 {
+                    "Ignore pattern: "
+                } else {
+                    ":"
+                };
+                let (shown_input, highlighted) =
+                    input_field.render(remaining.width - prompt_text.len() as u16);
+
+                f.render_widget(
+                    Paragraph::new(vec![Spans::from(vec![
+                        Span::styled(prompt_text, Style::default().add_modifier(Modifier::BOLD)),
+                        Span::raw(&shown_input[0..highlighted]),
+                        Span::styled(
+                            shown_input.chars().nth(highlighted).unwrap().to_string(),
+                            Style::default().bg(Color::White).fg(Color::Black),
+                        ),
+                        Span::raw(&shown_input[highlighted + 1..]),
+                    ])])
+                    .style(Style::default().bg(Color::Green).fg(Color::Black)),
+                    prompt_rect,
+                );
+
+                remaining
+            }
+
+            fn draw_error(&self, f: &mut tui::Frame<impl Backend>, message: &'_ str) -> Rect {
+                let size = f.size();
+                let newlines = message.lines().count() as u16;
+                let height = min(size.height, newlines);
+                let paragraph_rect =
+                    Rect::new(size.left(), size.bottom() - height, size.width, height);
+                let remaining =
+                    Rect::new(size.left(), size.top(), size.width, size.height - height);
+
+                let error_paragraph =
+                    Paragraph::new(message).style(Style::default().bg(Color::Red).fg(Color::White));
+                f.render_widget(error_paragraph, paragraph_rect);
+
+                remaining
             }
 
             fn draw_list(&self, f: &mut tui::Frame<impl Backend>, size: Rect) {
                 let block = Block::default().title("TODO LIST").borders(Borders::ALL);
                 f.render_widget(block, size);
+            }
+
+            fn ignore_pattern(&mut self, pattern: String) -> Result<(), regex::Error> {
+                let regex = Regex::new(&pattern)?;
+                Ok(())
             }
         }
 
@@ -136,10 +213,53 @@ pub mod make {
                 &mut self,
                 key: termion::event::Key,
             ) -> Option<crate::ui::UiStateReaction<B>> {
-                if let Key::Ctrl('c') = key {
-                    Some(UiStateReaction::Exit)
-                } else {
-                    None
+                match &mut self.mode {
+                    UiMode::List => {
+                        if let Key::Ctrl('c') = key {
+                            Some(UiStateReaction::Exit)
+                        } else {
+                            match key {
+                                Key::Char('z') => {
+                                    self.mode =
+                                        UiMode::Input(InputMode::IgnorePattern, InputField::new());
+                                }
+                                _ => {}
+                            };
+                            None
+                        }
+                    }
+                    UiMode::Input(mode, input_field) => {
+                        match key {
+                            Key::Ctrl('c') => {
+                                // Abort.
+                                self.mode = UiMode::List;
+                            }
+                            Key::Char('\n') | Key::Char('\r') => {
+                                let pattern = input_field.consume_input();
+                                match mode {
+                                    InputMode::IgnorePattern => {
+                                        self.mode = match self.ignore_pattern(pattern) {
+                                            Ok(()) => UiMode::List,
+                                            Err(err) => UiMode::Error(err.to_string()),
+                                        }
+                                    }
+                                    _ => todo!(),
+                                }
+                            }
+                            Key::Char('\t') => {}
+                            Key::Char(c) => input_field.add_char(c),
+                            Key::Backspace => input_field.backspace_char(),
+                            Key::Delete => input_field.delete_char(),
+                            Key::Left => input_field.caret_move_left(),
+                            Key::Right => input_field.caret_move_right(),
+                            _ => {}
+                        };
+                        None
+                    }
+                    UiMode::Error(_) => {
+                        self.mode = UiMode::List;
+                        None
+                    }
                 }
             }
 
@@ -148,7 +268,11 @@ pub mod make {
             }
 
             fn draw(&self, f: &mut tui::Frame<B>) {
-                let remaining = self.draw_help(f, f.size());
+                let remaining = match &self.mode {
+                    UiMode::List => self.draw_help(f, f.size()),
+                    UiMode::Input(_, input_field) => self.draw_prompt(f, f.size(), input_field),
+                    UiMode::Error(err_msg) => self.draw_error(f, err_msg),
+                };
                 self.draw_list(f, remaining);
             }
         }

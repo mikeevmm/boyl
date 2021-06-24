@@ -6,7 +6,7 @@ pub mod new {
 }
 
 pub mod make {
-    use std::{convert::TryInto, error::Error, fmt::Debug, path::PathBuf, str::FromStr};
+    use std::{error::Error, fmt::Debug, path::PathBuf, str::FromStr};
 
     use crate::ui;
     use colored::Colorize;
@@ -49,7 +49,7 @@ pub mod make {
         use regex::Regex;
         use std::{
             cmp::{max, min},
-            path::PathBuf,
+            path::{Path, PathBuf},
         };
         use termion::event::Key;
         use tui::{
@@ -61,7 +61,7 @@ pub mod make {
         };
 
         use crate::ui::{
-            layout::{InputField, VisualBox},
+            layout::{FileList, FileListWidget, InputField, VisualBox},
             UiState, UiStateReaction,
         };
 
@@ -75,19 +75,15 @@ pub mod make {
             Error(String),
         }
 
-        pub struct IgnoreUi<'paths> {
-            base_path: PathBuf,
-            ignored: Vec<&'paths PathBuf>,
-            open: Vec<&'paths PathBuf>,
+        pub struct IgnoreUi<'path> {
+            file_list: FileList<'path>,
             mode: UiMode,
         }
 
-        impl<'paths> IgnoreUi<'paths> {
-            pub fn new(base_path: PathBuf) -> Self {
+        impl<'path> IgnoreUi<'path> {
+            pub fn new(base_path: &'path Path) -> Self {
                 IgnoreUi {
-                    base_path,
-                    ignored: vec![],
-                    open: vec![],
+                    file_list: FileList::new(&base_path),
                     mode: UiMode::List,
                 }
             }
@@ -191,12 +187,12 @@ pub mod make {
             }
 
             fn draw_list(&self, f: &mut tui::Frame<impl Backend>, size: Rect) {
-                let block = Block::default().title("TODO LIST").borders(Borders::ALL);
-                f.render_widget(block, size);
+                f.render_widget(FileListWidget::from(&self.file_list), size);
             }
 
             fn ignore_pattern(&mut self, pattern: String) -> Result<(), regex::Error> {
                 let regex = Regex::new(&pattern)?;
+                self.file_list.exclude_pattern(regex);
                 Ok(())
             }
         }
@@ -209,16 +205,25 @@ pub mod make {
                 None
             }
 
-            fn on_key(
-                &mut self,
-                key: termion::event::Key,
-            ) -> Option<crate::ui::UiStateReaction<B>> {
+            fn on_key(&mut self, key: termion::event::Key) -> Option<crate::ui::UiStateReaction> {
                 match &mut self.mode {
                     UiMode::List => {
                         if let Key::Ctrl('c') = key {
                             Some(UiStateReaction::Exit)
                         } else {
                             match key {
+                                Key::Up | Key::Char('j') => {
+                                    self.file_list.go_up();
+                                },
+                                Key::Down | Key::Char('k') => {
+                                    self.file_list.go_down();
+                                },
+                                Key::Char('o') => {
+                                    self.file_list.toggle_folder();
+                                },
+                                Key::Char('x') => {
+                                    self.file_list.exclude_file();
+                                }
                                 Key::Char('z') => {
                                     self.mode =
                                         UiMode::Input(InputMode::IgnorePattern, InputField::new());
@@ -263,7 +268,7 @@ pub mod make {
                 }
             }
 
-            fn on_tick(&mut self) -> Option<crate::ui::UiStateReaction<B>> {
+            fn on_tick(&mut self) -> Option<crate::ui::UiStateReaction> {
                 None
             }
 
@@ -326,8 +331,8 @@ pub mod make {
         };
 
         let ignore_list = {
-            let ui_state = Box::new(ignore_ui::IgnoreUi::new(template_dir.path_buf));
-            ui::run_ui(ui_state);
+            let mut ui_state = ignore_ui::IgnoreUi::new(&template_dir.path_buf);
+            ui::run_ui(&mut ui_state);
         };
     }
 }

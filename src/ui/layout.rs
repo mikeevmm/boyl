@@ -1,9 +1,10 @@
-use std::{cell::RefCell, cmp::min, collections::HashMap};
-
-use tui::{
-    layout::Rect,
-    widgets::{Cell, Row},
+use regex::Regex;
+use std::{
+    cell::RefCell,
+    cmp::min,
+    path::{Path, PathBuf},
 };
+use tui::{layout::Rect, widgets::Widget};
 
 type Position = (u16, u16);
 
@@ -216,5 +217,55 @@ impl InputField {
 
     pub fn consume_input(&self) -> String {
         self.input_buffer[..self.input_buffer.len() - 1].to_string()
+    }
+}
+
+pub struct FileList<'path> {
+    base_path: &'path Path,
+    highlighted: usize,
+}
+
+impl<'path> FileList<'path> {
+    pub fn new(base_path: &'path Path) -> Self {
+        FileList {
+            base_path,
+            highlighted: 0,
+        }
+    }
+
+    pub fn go_up(&mut self) {
+        todo!()
+    }
+
+    pub fn go_down(&mut self) {
+        todo!()
+    }
+
+    pub fn toggle_folder(&mut self) {
+        todo!()
+    }
+
+    pub fn exclude_file(&mut self) {
+        todo!()
+    }
+
+    pub fn exclude_pattern(&mut self, pattern: Regex) {
+        todo!()
+    }
+}
+
+pub struct FileListWidget<'f, 'p> {
+    file_list: &'f FileList<'p>,
+}
+
+impl<'f, 'p> From<&'f FileList<'p>> for FileListWidget<'f, 'p> {
+    fn from(file_list: &'f FileList<'p>) -> Self {
+        FileListWidget { file_list }
+    }
+}
+
+impl<'f, 'p> Widget for FileListWidget<'f, 'p> {
+    fn render(self, area: Rect, buf: &mut tui::buffer::Buffer) {
+        todo!()
     }
 }

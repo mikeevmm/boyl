@@ -12,11 +12,7 @@ use tui::{
 
 pub mod layout;
 
-pub enum UiStateReaction<B>
-where
-    B: Backend,
-{
-    ChangeState(Box<dyn UiState<B>>),
+pub enum UiStateReaction {
     Exit,
 }
 
@@ -30,11 +26,11 @@ where
     /// is required.
     fn require_ticking(&self) -> Option<Duration>;
     /// Called upon input.
-    fn on_key(&mut self, key: Key) -> Option<UiStateReaction<B>>;
+    fn on_key(&mut self, key: Key) -> Option<UiStateReaction>;
     /// Called upon a tick, which can happen at fixed intervals (as
     /// specified in `require_ticking`), or when a redraw is required
     /// for some reason.
-    fn on_tick(&mut self) -> Option<UiStateReaction<B>>;
+    fn on_tick(&mut self) -> Option<UiStateReaction>;
     /// Draw the current state to the provided buffer.
     fn draw(&self, f: &mut Frame<B>);
 }
@@ -51,23 +47,23 @@ enum FsmReaction {
     Exit,
 }
 
-struct StateFsm<B>
+struct StateFsm<'state, B>
 where
     B: Backend,
 {
-    current_state: Box<dyn UiState<B>>,
+    state: &'state mut dyn UiState<B>,
     event_tx: Sender<FsmEvent>,
     runtime: Arc<Runtime>,
     tick_handle: Option<JoinHandle<()>>,
 }
 
-impl<B> StateFsm<B>
+impl<'state, B> StateFsm<'state, B>
 where
     B: Backend,
 {
-    fn new(state: Box<dyn UiState<B>>, event_tx: Sender<FsmEvent>, runtime: Arc<Runtime>) -> Self {
+    fn new(state: &'state mut dyn UiState<B>, event_tx: Sender<FsmEvent>, runtime: Arc<Runtime>) -> Self {
         let mut fsm = StateFsm {
-            current_state: state,
+            state,
             event_tx,
             runtime,
             tick_handle: None,
@@ -79,16 +75,11 @@ where
     /// Called by the update loop upon an event on the event channel.
     fn event(&mut self, event: FsmEvent) -> Option<FsmReaction> {
         let reaction = match event {
-            FsmEvent::Tick => self.current_state.on_tick(),
-            FsmEvent::Key(k) => self.current_state.on_key(k),
+            FsmEvent::Tick => self.state.on_tick(),
+            FsmEvent::Key(k) => self.state.on_key(k),
         };
         if let Some(reaction) = reaction {
             match reaction {
-                UiStateReaction::ChangeState(state) => {
-                    self.current_state = state;
-                    self.update_tick();
-                    None
-                }
                 UiStateReaction::Exit => Some(FsmReaction::Exit),
             }
         } else {
@@ -98,14 +89,14 @@ where
 
     /// Request of the update loop to draw to screen.
     fn draw(&self, f: &mut Frame<B>) {
-        self.current_state.draw(f);
+        self.state.draw(f);
     }
 
     fn update_tick(&mut self) {
         if let Some(old_handle) = &self.tick_handle {
             old_handle.abort();
         }
-        if let Some(duration) = self.current_state.require_ticking() {
+        if let Some(duration) = self.state.require_ticking() {
             let tick_handle = self.runtime.spawn({
                 let event_tx = self.event_tx.clone();
                 async move {
@@ -126,7 +117,7 @@ where
 
 type BackendInUse = TermionBackend<RawTerminal<std::io::Stdout>>;
 
-pub fn run_ui(starting_state: Box<dyn UiState<BackendInUse>>) {
+pub fn run_ui<'state>(state: &'state mut dyn UiState<BackendInUse>) {
     // Initialize termion/tui terminal
     let stdout = std::io::stdout()
         .into_raw_mode()
@@ -149,7 +140,7 @@ pub fn run_ui(starting_state: Box<dyn UiState<BackendInUse>>) {
     let state_fsm = {
         let event_tx = event_tx.clone();
         let tokio_runtime = tokio_runtime.clone();
-        StateFsm::new(starting_state, event_tx, tokio_runtime)
+        StateFsm::new(state, event_tx, tokio_runtime)
     };
 
     // The tokio task responsible for detecting terminal resizes. This is done

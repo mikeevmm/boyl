@@ -112,8 +112,8 @@ pub mod make {
                     help_boxes.push(help_box);
                 };
 
-                make_help_box("Up/J", "Move up in list");
-                make_help_box("Down/K", "Move down in list");
+                make_help_box("Up/K", "Move up in list");
+                make_help_box("Down/J", "Move down in list");
                 make_help_box("O", "Open/Close folder");
                 make_help_box("X", "Exclude/Include file");
                 make_help_box("Z", "Exclude pattern");
@@ -243,9 +243,10 @@ pub mod make {
 
                     // We wish to have text left-aligned, but to show the ending of the path
                     // if it is too big to fit in the frame.
+                    let file_width = max(20, (size.width as usize).saturating_sub(list_elem.depth));
                     let file_name = list_elem.path.to_string_lossy();
-                    let file_name = &file_name
-                        [file_name.len().saturating_sub(size.width as usize)..file_name.len()];
+                    let file_name =
+                        &file_name[file_name.len().saturating_sub(file_width)..file_name.len()];
 
                     let mut file_name_style = Style::default();
                     if highlighted {
@@ -254,7 +255,13 @@ pub mod make {
                     if !list_elem.included {
                         file_name_style = file_name_style.fg(Color::Gray);
                     }
-                    let file_name_paragraph = Paragraph::new(file_name).style(file_name_style);
+                    if list_elem.path.is_dir() {
+                        file_name_style = file_name_style.add_modifier(Modifier::BOLD);
+                    }
+                    let indented_file_name =
+                        format!("{}{}", " ".repeat(list_elem.depth), file_name);
+                    let file_name_paragraph =
+                        Paragraph::new(indented_file_name).style(file_name_style);
                     let render_to = Rect::new(size.left(), render_y, line_width, 1);
                     f.render_widget(file_name_paragraph, render_to);
                 }
@@ -282,10 +289,10 @@ pub mod make {
                             Some(UiStateReaction::Exit)
                         } else {
                             match key {
-                                Key::Up | Key::Char('j') => {
+                                Key::Up | Key::Char('k') => {
                                     self.file_list.go_up();
                                 }
-                                Key::Down | Key::Char('k') => {
+                                Key::Down | Key::Char('j') => {
                                     self.file_list.go_down();
                                 }
                                 Key::Char('o') => {

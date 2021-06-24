@@ -242,6 +242,7 @@ struct FileListItem {
     open: bool,
     path: PathBuf,
     included: bool,
+    depth: usize,
 }
 
 /// A list display of a file tree, where directories in the tree can be expanded
@@ -266,6 +267,7 @@ pub struct FileList<'path> {
 pub struct FileListIterElement<'path> {
     pub path: &'path Path,
     pub included: bool,
+    pub depth: usize,
 }
 
 impl<'path> FileList<'path> {
@@ -287,6 +289,7 @@ impl<'path> FileList<'path> {
                 open: false,
                 path: base_child.path(),
                 included: true,
+                depth: 0,
             };
             file_items.insert(key, item);
             file_keys.insert(base_child.path(), key);
@@ -354,6 +357,7 @@ impl<'path> FileList<'path> {
                 FileListIterElement {
                     path,
                     included: item.included,
+                    depth: item.depth,
                 }
             })
     }
@@ -387,14 +391,39 @@ impl<'path> FileList<'path> {
         }
     }
 
+    /// Removes all elements immediately following the indicated element in the `file_list`,
+    /// until the `next_sibling` of the `FileListItem` is found, or until de end of the list,
+    /// if `next_sibling` is `None`. This has the effect of collapsing the subtree corresponding
+    /// to this file in the file list display.
+    ///
+    /// This function expects the indicated element of the `file_list` to be a directory, and
+    /// has undefined behaviour otherwise.
     fn contract_dir(&mut self, index_in_list: usize) {
-        todo!()
+        if index_in_list == self.file_list.len() - 1 {
+            // Empty folder
+            return;
+        }
+
+        let contract_file_key = self.file_list[index_in_list];
+        let to_remove = self.file_list[(index_in_list + 1)..]
+            .iter()
+            .take_while(|&id| {
+                self.file_items
+                    .get(id)
+                    .unwrap()
+                    .parent
+                    .map_or(false, |pid| pid == contract_file_key)
+            })
+            .count();
+        self.file_list
+            .drain((index_in_list + 1)..(index_in_list + 1 + to_remove));
     }
 
     fn index_dir(&mut self, file_key: &Uuid) {
         let file_item = self.file_items.get(file_key).unwrap();
 
         let mut last = None;
+        let child_depth = file_item.depth + 1;
         for child_dir in file_item
             .path
             .read_dir()
@@ -405,10 +434,11 @@ impl<'path> FileList<'path> {
             let item = FileListItem {
                 last_sibling: last,
                 next_sibling: None,
-                parent: None,
+                parent: Some(*file_key),
                 open: false,
                 path: child_dir.path(),
                 included: true,
+                depth: child_depth,
             };
             self.file_items.insert(key, item);
             self.file_keys.insert(child_dir.path(), key);

@@ -2,9 +2,11 @@ use regex::Regex;
 use std::{
     cell::RefCell,
     cmp::min,
+    collections::{BTreeSet, HashMap},
+    ops::Range,
     path::{Path, PathBuf},
 };
-use tui::{layout::Rect, widgets::Widget};
+use uuid::Uuid;
 
 type Position = (u16, u16);
 
@@ -147,13 +149,15 @@ pub fn distribute(max_width: u16, elements: &[VisualBox]) -> Vec<Position> {
     positions
 }
 
+/// A single-line input field, with a caret.
+///
+/// This struct does not handle translating user input to actions on the input
+/// field, but rather provides functions to act on the input.
+#[derive(Clone)]
 pub struct InputField {
     input_buffer: String,
     caret_position: usize,
-    // This is not ideal, but this may be modified depending on the render
-    // width, which is only known at render time (when the reference is not
-    // mutable).
-    buffer_start: RefCell<usize>,
+    buffer_start: usize,
 }
 
 impl InputField {
@@ -164,7 +168,7 @@ impl InputField {
         InputField {
             input_buffer,
             caret_position: 0,
-            buffer_start: RefCell::new(0),
+            buffer_start: 0,
         }
     }
 
@@ -199,14 +203,16 @@ impl InputField {
         );
     }
 
-    pub fn render(&self, width: u16) -> (String, usize) {
-        if self.caret_position < *self.buffer_start.borrow() + 1 {
-            self.buffer_start.replace(self.caret_position);
-        } else if self.caret_position > *self.buffer_start.borrow() + width as usize - 1 {
-            self.buffer_start
-                .replace(self.caret_position.saturating_sub(width as usize) + 1);
+    /// Return the string that should be rendered when displaying this input field
+    /// (in a `width`-wide viewport), and the character that should be highlighted/
+    /// have a caret before it.
+    pub fn render(&mut self, width: u16) -> (String, usize) {
+        if self.caret_position < self.buffer_start + 1 {
+            self.buffer_start = self.caret_position;
+        } else if self.caret_position > self.buffer_start + width as usize - 1 {
+            self.buffer_start = self.caret_position.saturating_sub(width as usize) + 1;
         }
-        let buffer_start = *self.buffer_start.borrow();
+        let buffer_start = self.buffer_start;
         let buffer_end = min(buffer_start + width as usize, self.input_buffer.len());
         let highlighted = self.caret_position - buffer_start;
         (
@@ -215,34 +221,117 @@ impl InputField {
         )
     }
 
+    /// Return the user input that this input field currently has.
     pub fn consume_input(&self) -> String {
         self.input_buffer[..self.input_buffer.len() - 1].to_string()
     }
 }
 
+/// Entry in the [`FileList`].
+///
+/// Contains information about the surrounding elements (directory-wise),
+/// forming a sort of doubly linked list when in the context of a [`FileList`].
+struct FileListItem {
+    last_sibling: Option<Uuid>,
+    next_sibling: Option<Uuid>,
+    /// The UUID of the `FileListItem` corresponding to the parent directory
+    /// file for this file.
+    parent: Option<Uuid>,
+    /// Whether this file is showing its contents. Has no meaning for
+    /// files that are not directories.
+    open: bool,
+    path: PathBuf,
+    included: bool,
+}
+
+/// A list display of a file tree, where directories in the tree can be expanded
+/// and contracted.
 pub struct FileList<'path> {
     base_path: &'path Path,
-    highlighted: usize,
+    /// Map from UUID keys to `FileListItem`.
+    file_items: HashMap<Uuid, FileListItem>,
+    /// Map from paths to UUID keys. (Typically used as an intermediate step to
+    /// convert paths to the corresponding `FileListItem` in `file_items`).
+    file_keys: HashMap<PathBuf, Uuid>,
+    /// Files as they are displayed in the file list, as represented by their UUID
+    /// keys.
+    file_list: Vec<Uuid>,
+    /// If a UUID is contained in this set, then its contents have been indexed
+    /// previously, to at least one level of depth, and every direct child of this
+    /// file has a key in `file_keys`.
+    indexed: BTreeSet<Uuid>,
+    pub highlight: usize,
+}
+
+pub struct FileListIterElement<'path> {
+    pub path: &'path Path,
+    pub included: bool,
 }
 
 impl<'path> FileList<'path> {
     pub fn new(base_path: &'path Path) -> Self {
+        let mut file_items = HashMap::<Uuid, FileListItem>::new();
+        let mut file_keys = HashMap::<PathBuf, Uuid>::new();
+        let mut last = None;
+        let mut file_list = vec![];
+        for base_child in base_path
+            .read_dir()
+            .expect("Could not read base directory.")
+            .flatten()
+        {
+            let key = Uuid::new_v4();
+            let item = FileListItem {
+                last_sibling: last,
+                next_sibling: None,
+                parent: None,
+                open: false,
+                path: base_child.path(),
+                included: true,
+            };
+            file_items.insert(key, item);
+            file_keys.insert(base_child.path(), key);
+            if let Some(last) = last {
+                file_items.get_mut(&last).unwrap().next_sibling = Some(key);
+            }
+            last = Some(key);
+            file_list.push(key);
+        }
+
         FileList {
             base_path,
-            highlighted: 0,
+            file_items,
+            file_keys,
+            file_list,
+            indexed: BTreeSet::<Uuid>::new(),
+            highlight: 0,
         }
     }
 
     pub fn go_up(&mut self) {
-        todo!()
+        self.highlight = self.highlight.saturating_sub(1);
     }
 
     pub fn go_down(&mut self) {
-        todo!()
+        self.highlight = min(
+            self.highlight.saturating_add(1),
+            self.file_list.len().saturating_sub(1),
+        );
     }
 
     pub fn toggle_folder(&mut self) {
-        todo!()
+        if self.file_list.is_empty() {
+            return;
+        }
+        let file_key = self.file_list[self.highlight];
+        let file = self.file_items.get_mut(&file_key).unwrap();
+        if !file.path.is_dir() {
+            return;
+        }
+        file.open = !file.open;
+        match file.open {
+            true => self.expand_dir(self.highlight),
+            false => self.contract_dir(self.highlight),
+        }
     }
 
     pub fn exclude_file(&mut self) {
@@ -252,20 +341,83 @@ impl<'path> FileList<'path> {
     pub fn exclude_pattern(&mut self, pattern: Regex) {
         todo!()
     }
-}
 
-pub struct FileListWidget<'f, 'p> {
-    file_list: &'f FileList<'p>,
-}
-
-impl<'f, 'p> From<&'f FileList<'p>> for FileListWidget<'f, 'p> {
-    fn from(file_list: &'f FileList<'p>) -> Self {
-        FileListWidget { file_list }
+    pub fn iter_paths(
+        &self,
+        range: Range<usize>,
+    ) -> impl Iterator<Item = FileListIterElement<'_>> + '_ {
+        self.file_list[range]
+            .iter()
+            .map(move |id| self.file_items.get(id).unwrap())
+            .map(move |item| {
+                let path = item.path.strip_prefix(self.base_path).unwrap();
+                FileListIterElement {
+                    path,
+                    included: item.included,
+                }
+            })
     }
-}
 
-impl<'f, 'p> Widget for FileListWidget<'f, 'p> {
-    fn render(self, area: Rect, buf: &mut tui::buffer::Buffer) {
+    pub fn len(&self) -> usize {
+        self.file_list.len()
+    }
+
+    /// Inserts the contents to the indicated element in the `file_list` into the `file_list`,
+    /// indexing the contents if needed.
+    ///
+    /// This function expects the indicated element of the `file_list` to be a directory, and
+    /// has undefined behaviour otherwise.
+    fn expand_dir(&mut self, index_in_list: usize) {
+        let expand_file_key = self.file_list[index_in_list];
+
+        if !self.indexed.contains(&expand_file_key) {
+            self.index_dir(&expand_file_key);
+        }
+
+        let expand_file = self.file_items.get(&expand_file_key).unwrap();
+        for child_path in expand_file
+            .path
+            .read_dir()
+            .expect("Could not read directory.")
+            .flatten()
+        {
+            let child_path = child_path.path();
+            let child_key = *self.file_keys.get(&child_path).unwrap();
+            self.file_list.insert(index_in_list + 1, child_key);
+        }
+    }
+
+    fn contract_dir(&mut self, index_in_list: usize) {
         todo!()
+    }
+
+    fn index_dir(&mut self, file_key: &Uuid) {
+        let file_item = self.file_items.get(file_key).unwrap();
+
+        let mut last = None;
+        for child_dir in file_item
+            .path
+            .read_dir()
+            .expect("Could not read directory.")
+            .flatten()
+        {
+            let key = Uuid::new_v4();
+            let item = FileListItem {
+                last_sibling: last,
+                next_sibling: None,
+                parent: None,
+                open: false,
+                path: child_dir.path(),
+                included: true,
+            };
+            self.file_items.insert(key, item);
+            self.file_keys.insert(child_dir.path(), key);
+            if let Some(last) = last {
+                self.file_items.get_mut(&last).unwrap().next_sibling = Some(key);
+            }
+            last = Some(key);
+        }
+
+        self.indexed.insert(*file_key);
     }
 }

@@ -18,6 +18,10 @@ termion = "~1.5.0"
 read_input = "~0.8.4"
 regex = "~1.5.4"
 
+[dependencies.uuid]
+version = "~0.8.2"
+features = ["v4"]
+
 [dependencies.serde]
 version = "~1.0.126"
 features = ["derive"]

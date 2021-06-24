@@ -30,9 +30,30 @@ where
     /// Called upon a tick, which can happen at fixed intervals (as
     /// specified in `require_ticking`), or when a redraw is required
     /// for some reason.
+    ///
+    /// Therefore, you should not rely on this function being called
+    /// *only* at fixed intervals (as specified in `require_ticking`),
+    /// as it may be called more often (for example, the terminal is
+    /// resized).
+    ///
+    /// This function is guaranteed to be called always before a `draw`
+    /// call.
     fn on_tick(&mut self) -> Option<UiStateReaction>;
     /// Draw the current state to the provided buffer.
-    fn draw(&self, f: &mut Frame<B>);
+    /// 
+    /// # A Note on why This Function Takes a Mutable Reference
+    ///
+    /// Originally, `draw` took an `&self` reference, in line with the
+    /// logic that drawing the current state to the terminal should not
+    /// really affect the internal state of the state.
+    ///
+    /// However, I found myself resorting to `RefCell` more than once
+    /// because *the size of render is not known until the `frame` call*.
+    ///
+    /// This meant that actions such as a highlight "pushing" a list further
+    /// or backwards could not be carried out outside the `draw` call, and
+    /// could not be saved for the following frame.
+    fn draw(&mut self, f: &mut Frame<B>);
 }
 
 /// Events passed between the tokio update loops and `StateFSM`.
@@ -88,7 +109,7 @@ where
     }
 
     /// Request of the update loop to draw to screen.
-    fn draw(&self, f: &mut Frame<B>) {
+    fn draw(&mut self, f: &mut Frame<B>) {
         self.state.draw(f);
     }
 
@@ -117,7 +138,7 @@ where
 
 type BackendInUse = TermionBackend<RawTerminal<std::io::Stdout>>;
 
-pub fn run_ui<'state>(state: &'state mut dyn UiState<BackendInUse>) {
+pub fn run_ui(state: &mut dyn UiState<BackendInUse>) {
     // Initialize termion/tui terminal
     let stdout = std::io::stdout()
         .into_raw_mode()

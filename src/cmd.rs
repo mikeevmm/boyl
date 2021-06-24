@@ -49,7 +49,7 @@ pub mod make {
         use regex::Regex;
         use std::{
             cmp::{max, min},
-            path::{Path, PathBuf},
+            path::Path,
         };
         use termion::event::Key;
         use tui::{
@@ -57,26 +57,39 @@ pub mod make {
             layout::Rect,
             style::{Color, Modifier, Style},
             text::{Span, Spans},
-            widgets::{Block, Borders, Paragraph},
+            widgets::{Block, Paragraph},
         };
 
         use crate::ui::{
-            layout::{FileList, FileListWidget, InputField, VisualBox},
+            layout::{FileList, InputField, VisualBox},
             UiState, UiStateReaction,
         };
 
+        #[derive(Clone, Copy)]
         enum InputMode {
             IgnorePattern,
         }
 
+        #[derive(Clone)]
         enum UiMode {
             List,
             Input(InputMode, InputField),
             Error(String),
         }
 
+        struct FileListWidget {
+            buffer_start: usize,
+        }
+
+        impl Default for FileListWidget {
+            fn default() -> Self {
+                FileListWidget { buffer_start: 0 }
+            }
+        }
+
         pub struct IgnoreUi<'path> {
             file_list: FileList<'path>,
+            file_widget: FileListWidget,
             mode: UiMode,
         }
 
@@ -84,6 +97,7 @@ pub mod make {
             pub fn new(base_path: &'path Path) -> Self {
                 IgnoreUi {
                     file_list: FileList::new(&base_path),
+                    file_widget: FileListWidget::default(),
                     mode: UiMode::List,
                 }
             }
@@ -137,10 +151,10 @@ pub mod make {
             }
 
             fn draw_prompt(
-                &self,
+                &mut self,
                 f: &mut tui::Frame<impl Backend>,
                 size: Rect,
-                input_field: &InputField,
+                input_field: &mut InputField,
             ) -> Rect {
                 let prompt_rect = Rect::new(size.left(), size.bottom() - 1, size.width, 1);
                 let remaining = Rect::new(size.left(), size.top(), size.width, size.height - 1);
@@ -186,8 +200,64 @@ pub mod make {
                 remaining
             }
 
-            fn draw_list(&self, f: &mut tui::Frame<impl Backend>, size: Rect) {
-                f.render_widget(FileListWidget::from(&self.file_list), size);
+            fn draw_list(&mut self, f: &mut tui::Frame<impl Backend>, size: Rect) {
+                if self.file_list.highlight < self.file_widget.buffer_start {
+                    self.file_widget.buffer_start = self.file_list.highlight;
+                } else if self.file_list.highlight
+                    > self.file_widget.buffer_start + size.height as usize - 1
+                {
+                    self.file_widget.buffer_start = self
+                        .file_list
+                        .highlight
+                        .saturating_sub(size.height as usize)
+                        + 1;
+                }
+
+                let list_size = self.file_list.len();
+                let buffer_start = self.file_widget.buffer_start;
+                let buffer_end = min(
+                    self.file_widget.buffer_start + size.height as usize,
+                    list_size,
+                );
+                for (i, list_elem) in self
+                    .file_list
+                    .iter_paths(buffer_start..buffer_end)
+                    .enumerate()
+                {
+                    let show_up_indicator = i == 0 && buffer_start > 0;
+                    let show_down_indicator =
+                        list_size > size.height as usize && i == (buffer_end - buffer_start - 1);
+                    let highlighted = self.file_list.highlight == buffer_start + i;
+                    let render_y = size.top() + i as u16;
+
+                    if show_up_indicator || show_down_indicator {
+                        let indicator = if show_up_indicator { "▲" } else { "▼" };
+                        let render_to = Rect::new(size.right().saturating_sub(1), render_y, 1, 1);
+                        f.render_widget(Paragraph::new(indicator), render_to);
+                    }
+
+                    let mut line_width = size.width;
+                    if show_up_indicator || show_down_indicator {
+                        line_width = line_width.saturating_sub(1)
+                    }
+
+                    // We wish to have text left-aligned, but to show the ending of the path
+                    // if it is too big to fit in the frame.
+                    let file_name = list_elem.path.to_string_lossy();
+                    let file_name = &file_name
+                        [file_name.len().saturating_sub(size.width as usize)..file_name.len()];
+
+                    let mut file_name_style = Style::default();
+                    if highlighted {
+                        file_name_style = file_name_style.bg(Color::DarkGray).fg(Color::White);
+                    }
+                    if !list_elem.included {
+                        file_name_style = file_name_style.fg(Color::Gray);
+                    }
+                    let file_name_paragraph = Paragraph::new(file_name).style(file_name_style);
+                    let render_to = Rect::new(size.left(), render_y, line_width, 1);
+                    f.render_widget(file_name_paragraph, render_to);
+                }
             }
 
             fn ignore_pattern(&mut self, pattern: String) -> Result<(), regex::Error> {
@@ -214,13 +284,13 @@ pub mod make {
                             match key {
                                 Key::Up | Key::Char('j') => {
                                     self.file_list.go_up();
-                                },
+                                }
                                 Key::Down | Key::Char('k') => {
                                     self.file_list.go_down();
-                                },
+                                }
                                 Key::Char('o') => {
                                     self.file_list.toggle_folder();
-                                },
+                                }
                                 Key::Char('x') => {
                                     self.file_list.exclude_file();
                                 }
@@ -272,13 +342,17 @@ pub mod make {
                 None
             }
 
-            fn draw(&self, f: &mut tui::Frame<B>) {
-                let remaining = match &self.mode {
+            fn draw(&mut self, f: &mut tui::Frame<B>) {
+                let mut mode = self.mode.clone();
+                let remaining = match &mut mode {
                     UiMode::List => self.draw_help(f, f.size()),
                     UiMode::Input(_, input_field) => self.draw_prompt(f, f.size(), input_field),
                     UiMode::Error(err_msg) => self.draw_error(f, err_msg),
                 };
-                self.draw_list(f, remaining);
+                let list_block = Block::default().borders(tui::widgets::Borders::ALL);
+                let block_inner = list_block.inner(remaining);
+                f.render_widget(list_block, remaining);
+                self.draw_list(f, block_inner);
             }
         }
     }
@@ -346,9 +420,7 @@ pub mod list {
     pub fn list(config: &LoadedConfig) {
         for template in config.config.templates.values() {
             println!(
-                "\
-    {}
-      {}",
+                "{}\n  {}",
                 template.name.bold(),
                 template
                     .description

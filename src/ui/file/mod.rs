@@ -38,17 +38,17 @@ impl Default for FileListWidget {
     }
 }
 
-pub struct IgnoreUi<'path> {
+pub struct FilePickerUi<'path> {
     base_path: &'path Path,
-    file_list: FileList<'path>,
+    pub file_list: FileList<'path>,
     file_widget: FileListWidget,
     mode: UiMode,
-    aborted: bool,
+    pub aborted: bool,
 }
 
-impl<'path> IgnoreUi<'path> {
+impl<'path> FilePickerUi<'path> {
     pub fn new(base_path: &'path Path) -> Self {
-        IgnoreUi {
+        FilePickerUi {
             base_path,
             file_list: FileList::new(&base_path),
             file_widget: FileListWidget::default(),
@@ -231,7 +231,7 @@ impl<'path> IgnoreUi<'path> {
     }
 }
 
-impl<'paths, B> UiState<B> for IgnoreUi<'paths>
+impl<'paths, B> UiState<B> for FilePickerUi<'paths>
 where
     B: Backend,
 {

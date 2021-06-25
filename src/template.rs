@@ -4,5 +4,5 @@ use std::path::PathBuf;
 pub struct Template {
     pub name: String,
     pub description: Option<String>,
-    pub directory_name: PathBuf,
+    pub directory: PathBuf,
 }

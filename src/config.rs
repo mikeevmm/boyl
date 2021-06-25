@@ -15,12 +15,6 @@ fn get_json_path(config_path: &Path) -> PathBuf {
     config_path.join("config.json")
 }
 
-/// Given the base configuration folder path, returns
-/// the path of the templates folder.
-fn get_template_dir(config_path: &Path) -> PathBuf {
-    config_path.join("templates")
-}
-
 pub type TemplateKey = u64;
 
 /// Configuration elements that persist between sessions;
@@ -72,7 +66,7 @@ impl Config {
         if self.templates.get(&key).is_some() {
             return Err(key);
         }
-        self.templates.insert(key, template).unwrap();
+        self.templates.insert(key, template);
         Ok(key)
     }
 
@@ -189,6 +183,18 @@ impl LoadedConfig {
     pub fn load_from_path(path: PathBuf) -> Result<Self, LoadConfigError> {
         let config = Config::load_from_path(&path)?.unwrap_or_default();
         Ok(LoadedConfig { config, path })
+    }
+
+    /// Get the template base directory, per this `LoadedConfig`'s base directory.
+    ///
+    /// As a side effect of this call, if this directory does not exist, it will
+    /// be created.
+    pub fn get_template_dir(&self) -> PathBuf {
+        let dir = self.path.join("templates");
+        if !dir.exists() {
+            std::fs::create_dir(&dir).expect("Could not create templates directory.");
+        }
+        dir
     }
 
     /// Serialize the configuration object to disk, according to the path

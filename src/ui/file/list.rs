@@ -123,7 +123,7 @@ impl<'path> FileList<'path> {
     pub fn toggle_exclude_file(&mut self) {
         let file_key = self.file_list[self.highlight];
 
-        match self.is_included(&file_key) {
+        match self.is_id_included(&file_key) {
             true => {
                 // We wish to exclude the file.
                 let was_exception = self.exclude_exceptions.remove(&file_key);
@@ -186,7 +186,7 @@ impl<'path> FileList<'path> {
                 let path = item.path.strip_prefix(self.base_path).unwrap();
                 FileListIterElement {
                     path,
-                    included: self.is_included(id),
+                    included: self.is_id_included(id),
                     depth: item.depth,
                 }
             })
@@ -196,7 +196,36 @@ impl<'path> FileList<'path> {
         self.file_list.len()
     }
 
-    fn is_included(&self, uuid: &Uuid) -> bool {
+    /// Whether a path is to be included, per the settings of the user.
+    ///
+    /// This function is recursive, in that if a file is not known to be included or
+    /// not, a recursive call to the parent directory is made (with the guarantee that
+    /// at least the base directories will be known to be included or not). This
+    /// function provides memoization for the procedure, where answers are stored in
+    /// `memo`.
+    ///
+    /// This function expects the provided path to be a subpath of `self.base_path`.
+    /// If this is not the case, behaviour is undefined.
+    pub fn is_included_memoized(&self, path: &Path, memo: &mut HashMap<PathBuf, bool>) -> bool {
+        if let Some(&answer) = memo.get(path) {
+            return answer;
+        }
+        let answer = if let Some(id) = self.file_keys.get(path) {
+            self.is_id_included(id)
+        } else {
+            // We have not seen this file. This may be because
+            // it is in a subdirectory that was not enumerated.
+            self.is_included_memoized(
+                path.parent()
+                    .expect("Expected the file path to have a parent."),
+                memo,
+            )
+        };
+        memo.insert(path.into(), answer);
+        answer
+    }
+
+    fn is_id_included(&self, uuid: &Uuid) -> bool {
         let self_excluded = !self.exclude_exceptions.contains(uuid)
             && (self.exclude_explicit.contains(uuid)
                 || self
@@ -210,7 +239,7 @@ impl<'path> FileList<'path> {
 
         // A file can be excluded because a parent is excluded.
         if let Some(parent) = self.file_items.get(uuid).unwrap().parent {
-            return self.is_included(&parent);
+            return self.is_id_included(&parent);
         }
 
         true

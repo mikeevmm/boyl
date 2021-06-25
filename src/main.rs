@@ -24,8 +24,8 @@ mod ui;
 
 const VERSION: &str = "0.0.1";
 
-#[derive(Debug)]
-enum Verbosity {
+#[derive(Debug, PartialEq, Eq, PartialOrd, Ord)]
+pub enum Verbosity {
     None,
     Some,
     Very,
@@ -194,7 +194,7 @@ fn main() {
             todo!()
         }
         (cmd::make::CMD_STR, Some(_)) => {
-            cmd::make::make();
+            cmd::make::make(&mut config, verbosity);
             write_config_or_fail(&config);
         }
         (cmd::list::CMD_STR, Some(_)) => {

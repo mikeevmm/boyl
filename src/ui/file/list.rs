@@ -135,7 +135,7 @@ impl<'path> FileList<'path> {
                 }
             }
             false => {
-                // We wish to include the fle.
+                // We wish to include the file.
                 let was_explicit = self.exclude_explicit.remove(&file_key);
                 // If this file was not explicitly excluded, then it was excluded
                 // as the result of a pattern, and should be included explicitly.
@@ -226,13 +226,16 @@ impl<'path> FileList<'path> {
     }
 
     fn is_id_included(&self, uuid: &Uuid) -> bool {
-        let self_excluded = !self.exclude_exceptions.contains(uuid)
-            && (self.exclude_explicit.contains(uuid)
-                || self
-                    .exclude_patterns
-                    .iter()
-                    .any(|pattern| self.exclusion_pattern_matches(pattern, uuid)));
-
+        let exclude_exception = self.exclude_exceptions.contains(uuid);
+        if exclude_exception {
+            return true;
+        }
+        
+        let self_excluded = self.exclude_explicit.contains(uuid)
+            || self
+                .exclude_patterns
+                .iter()
+                .any(|pattern| self.exclusion_pattern_matches(pattern, uuid));
         if self_excluded {
             return false;
         }
@@ -242,6 +245,7 @@ impl<'path> FileList<'path> {
             return self.is_id_included(&parent);
         }
 
+        // By default files are included.
         true
     }
 

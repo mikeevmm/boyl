@@ -10,9 +10,10 @@ use tui::{
     Frame, Terminal,
 };
 
-pub mod layout;
-pub mod input;
 pub mod file;
+pub mod input;
+pub mod layout;
+pub mod spinner;
 
 pub enum UiStateReaction {
     Exit,
@@ -42,7 +43,7 @@ where
     /// call.
     fn on_tick(&mut self) -> Option<UiStateReaction>;
     /// Draw the current state to the provided buffer.
-    /// 
+    ///
     /// # A Note on why This Function Takes a Mutable Reference
     ///
     /// Originally, `draw` took an `&self` reference, in line with the
@@ -70,12 +71,26 @@ enum FsmReaction {
     Exit,
 }
 
+/// An `FsmEvent` passed from one of the worker threads to the main
+/// loop.
+///
+/// This enum is mostly a workaround to handle with the fact that `stdin`
+/// is blocking and will hang even after the Tokio runtime has terminated.
+enum InternalFsmEvent {
+    /// An FsmEvent sent by a worker thread where the thread does not care
+    /// if the event resulted in the runtime terminating.
+    Bare(FsmEvent),
+    /// An FsmEvent sent by a worker thread where the thread wants to know
+    /// if it should halt as a consequence of the event.
+    InquireTerminate(FsmEvent, oneshot::Sender<bool>),
+}
+
 struct StateFsm<'state, B>
 where
     B: Backend,
 {
     state: &'state mut dyn UiState<B>,
-    event_tx: Sender<FsmEvent>,
+    event_tx: Sender<InternalFsmEvent>,
     runtime: Arc<Runtime>,
     tick_handle: Option<JoinHandle<()>>,
 }
@@ -84,7 +99,11 @@ impl<'state, B> StateFsm<'state, B>
 where
     B: Backend,
 {
-    fn new(state: &'state mut dyn UiState<B>, event_tx: Sender<FsmEvent>, runtime: Arc<Runtime>) -> Self {
+    fn new(
+        state: &'state mut dyn UiState<B>,
+        event_tx: Sender<InternalFsmEvent>,
+        runtime: Arc<Runtime>,
+    ) -> Self {
         let mut fsm = StateFsm {
             state,
             event_tx,
@@ -125,7 +144,11 @@ where
                 async move {
                     loop {
                         sleep(duration).await;
-                        if event_tx.send(FsmEvent::Tick).await.is_err() {
+                        if event_tx
+                            .send(InternalFsmEvent::Bare(FsmEvent::Tick))
+                            .await
+                            .is_err()
+                        {
                             // Channel closed. Goodbye!
                             break;
                         }
@@ -134,7 +157,9 @@ where
             });
             self.tick_handle = Some(tick_handle);
         }
-        self.event_tx.blocking_send(FsmEvent::Tick).ok();
+        self.event_tx
+            .blocking_send(InternalFsmEvent::Bare(FsmEvent::Tick))
+            .ok();
     }
 }
 
@@ -157,7 +182,7 @@ pub fn run_ui(state: &mut dyn UiState<BackendInUse>) {
     );
 
     // The channels for communication between the tokio "threads" and the FSM
-    let (event_tx, event_rx) = tokio::sync::mpsc::channel::<FsmEvent>(10_usize);
+    let (event_tx, event_rx) = tokio::sync::mpsc::channel::<InternalFsmEvent>(10_usize);
 
     // The state, in general. Can be thought of as "scenes" in the TUI
     let state_fsm = {
@@ -182,7 +207,12 @@ pub fn run_ui(state: &mut dyn UiState<BackendInUse>) {
                     Ok(val) => val,
                     Err(_) => return,
                 };
-                if last_seen != new_size && event_tx.send(FsmEvent::Tick).await.is_err() {
+                if last_seen != new_size
+                    && event_tx
+                        .send(InternalFsmEvent::Bare(FsmEvent::Tick))
+                        .await
+                        .is_err()
+                {
                     // Main loop has hung up, goodbye!
                     break;
                 }
@@ -195,21 +225,31 @@ pub fn run_ui(state: &mut dyn UiState<BackendInUse>) {
     // Thread responsible for listening to key events (which is exposed)
     // in a blocking iterator, and dispatch the events to the main loop.
     //
-    // From tokio internal documentation:
+    // Tokio async stdin is not an option:
     //
-    //      For technical reasons, `stdin` is
-    //      implemented by using an ordinary blocking read on a separate thread, and
-    //      it is impossible to cancel that read. This can make shutdown of the
-    //      runtime hang until the user presses enter.
+    //      This handle is best used for non-interactive uses, such as when a
+    //      file is piped into the application. For technical reasons, stdin
+    //      is implemented by using an ordinary blocking read on a separate
+    //      thread, and it is impossible to cancel that read. This can make
+    //      shutdown of the runtime hang until the user presses enter.
     //
-    // This will therefore left to hang and expectedly stopped on next key
-    // press (detecting that the channel has been dropped) or when the whole
-    // program terminates.
-    std::thread::spawn(move || {
+    //      For interactive uses, it is recommended to spawn a thread dedicated
+    //      to user input and use blocking IO directly in that thread.
+    tokio_runtime.spawn_blocking(move || {
         let stdin = std::io::stdin();
         for key in stdin.keys().flatten() {
-            if event_tx.blocking_send(FsmEvent::Key(key)).is_err() {
+            let (inquire_tx, inquire_rx) = oneshot::channel::<bool>();
+            if event_tx
+                .blocking_send(InternalFsmEvent::InquireTerminate(
+                    FsmEvent::Key(key),
+                    inquire_tx,
+                ))
+                .is_err()
+            {
                 // Main loop has hung up, goodbye!
+                break;
+            }
+            if inquire_rx.recv().unwrap_or(true) {
                 break;
             }
         }
@@ -226,10 +266,15 @@ pub fn run_ui(state: &mut dyn UiState<BackendInUse>) {
 
         terminal.clear().unwrap();
         while let Some(event) = event_rx.recv().await {
-            if let Some(reaction) = state_fsm.event(event) {
-                match reaction {
-                    FsmReaction::Exit => break,
-                }
+            let (event, channel) = match event {
+                InternalFsmEvent::Bare(event) => (event, None),
+                InternalFsmEvent::InquireTerminate(event, channel) => (event, Some(channel)),
+            };
+            if let Some(FsmReaction::Exit) = state_fsm.event(event) {
+                channel.and_then(|x| x.send(true).ok());
+                break;
+            } else {
+                channel.and_then(|x| x.send(false).ok());
             }
             let draw_result = terminal.draw(|f| {
                 state_fsm.draw(f);

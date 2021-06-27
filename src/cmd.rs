@@ -7,21 +7,25 @@ pub mod new {
 
 pub mod make {
     use std::{
-        collections::HashMap,
+        collections::{HashMap, VecDeque},
         error::Error,
         fmt::Debug,
-        fs,
-        path::{Path, PathBuf},
+        path::PathBuf,
         str::FromStr,
+        sync::Arc,
     };
 
     use crate::{
-        config::{Config, LoadedConfig},
+        config::LoadedConfig,
         template::Template,
-        ui, Verbosity,
+        ui::{self, spinner::Spinner},
+        Verbosity,
     };
     use colored::Colorize;
+    use parking_lot::Mutex;
     use read_input::prelude::*;
+    use termion::terminal_size;
+    use tokio::sync::mpsc;
 
     pub const CMD_STR: &str = "make";
 
@@ -54,6 +58,31 @@ pub mod make {
     impl From<PathBuf> for UserPath {
         fn from(path_buf: PathBuf) -> Self {
             UserPath { path_buf }
+        }
+    }
+
+    struct UserBool {
+        value: bool,
+    }
+
+    impl From<bool> for UserBool {
+        fn from(value: bool) -> Self {
+            UserBool { value }
+        }
+    }
+
+    impl FromStr for UserBool {
+        type Err = String;
+
+        fn from_str(s: &str) -> Result<Self, Self::Err> {
+            let s = s.to_lowercase();
+            if s == "n" || s == "no" || s == "false" {
+                Ok(false.into())
+            } else if s == "y" || s == "yes" || s == "true" {
+                Ok(true.into())
+            } else {
+                Err(format!("Cannot understand {}", s))
+            }
         }
     }
 
@@ -146,36 +175,121 @@ pub mod make {
             ui_state.file_list
         };
 
-        let mut files_memo = HashMap::<PathBuf, bool>::new();
-        let files_to_include = walkdir::WalkDir::new(&template_dir.path_buf)
-            .min_depth(1)
-            .into_iter()
-            .flatten()
-            .filter(|f| file_list.is_included_memoized(f.path(), &mut files_memo));
-
         // We now copy the files to the templates directory, and store a new template in memory.
+        // Copying is done on a Tokio runtime, to make use of all threads without manual thread
+        // management.
         let target_base_dir = config.get_template_dir().join(&template_name);
-        std::fs::create_dir(&target_base_dir).expect("Could not create template directory.");
+        if let Err(err) = std::fs::create_dir(&target_base_dir) {
+            match err.kind() {
+                std::io::ErrorKind::AlreadyExists => {
+                    println!(
+                        "The template base directory already exists.\n\
+                    This may be because you previously aborted the creation of a template of \
+                    the same name."
+                    );
+                    let erase_and_continue = input::<UserBool>()
+                        .repeat_msg(format!(
+                            "Do you wish to delete the existing directory and continue? {} ",
+                            "[y/N]".dimmed()
+                        ))
+                        .default(false.into())
+                        .get();
 
-        for file in files_to_include {
-            if verbosity >= Verbosity::Very {
-                println!("Copying: {}", file.path().to_string_lossy());
-            }
-            let target_file =
-                target_base_dir.join(file.path().strip_prefix(&template_dir.path_buf).unwrap());
-            let copy_result = if file.path().is_dir() {
-                std::fs::create_dir(target_file).err()
-            } else {
-                std::fs::copy(file.into_path(), target_file).err()
-            };
-            if let Some(e) = copy_result {
-                if verbosity >= Verbosity::Very {
-                    println!("Some error occurred; cleaning up the templates directory first...");
+                    match erase_and_continue.value {
+                        true => {
+                            std::fs::remove_dir_all(&target_base_dir)
+                                .expect("Could not remove the existing directory.");
+                            std::fs::create_dir(&target_base_dir)
+                                .expect("Could not create template directory.");
+                        }
+                        false => {
+                            println!("Aborting.");
+                            return;
+                        }
+                    }
                 }
-                std::fs::remove_dir_all(target_base_dir).ok();
-                panic!("{}", e);
-            };
+                _ => panic!(
+                    "Could not create the template base directory, with error: {}",
+                    err
+                ),
+            }
         }
+
+        let tokio_runtime = tokio::runtime::Builder::new_multi_thread().build().unwrap();
+        tokio_runtime.block_on({
+            let target_base_dir = target_base_dir.clone();
+            async {
+                let mut files_memo = HashMap::<PathBuf, bool>::new();
+                let files_to_include = walkdir::WalkDir::new(&template_dir.path_buf)
+                    .min_depth(1)
+                    .into_iter()
+                    .flatten()
+                    .filter(|f| file_list.is_included_memoized(f.path(), &mut files_memo));
+
+                let copy_queue = Arc::new(Mutex::new(VecDeque::<(PathBuf, PathBuf)>::new()));
+                let mut copy_handlers = vec![];
+                // TODO: Make this a less arbitrary number
+                for _copy_handler_i in 0..20 {
+                    let copy_queue = copy_queue.clone();
+                    let copy_handler = tokio::spawn(async move {
+                        while let Some((from, to)) = {
+                            let mut lock = copy_queue.lock();
+                            let value = lock.pop_back();
+                            drop(lock);
+                            value
+                        } {
+                            if from.is_dir() {
+                                tokio::fs::create_dir_all(to).await.unwrap();
+                            } else {
+                                tokio::fs::create_dir_all(to.as_path().parent().unwrap())
+                                    .await
+                                    .unwrap();
+                                tokio::fs::copy(from, to).await.unwrap();
+                            };
+                        }
+                    });
+                    copy_handlers.push(copy_handler);
+                }
+
+                let mut spinner = Spinner::new();
+                for file in files_to_include {
+                    let spinner_symbol = spinner.tick();
+
+                    let base_file = file.path().strip_prefix(&template_dir.path_buf).unwrap();
+                    let display_path = &base_file.to_string_lossy();
+                    let term_width = terminal_size().map(|(w, _)| w).unwrap_or(5) as usize;
+                    let max_path_width = term_width.saturating_sub(5);
+                    let space_width = term_width
+                        .saturating_sub(std::cmp::min(max_path_width, display_path.len()) + 5);
+
+                    print!("{}{} ", spinner_symbol, " ".repeat(space_width / 2));
+                    if display_path.len() > max_path_width {
+                        print!("{}", &display_path[display_path.len() - max_path_width..]);
+                    } else {
+                        print!("{}", display_path,);
+                    }
+                    print!(
+                        " {}{}\r",
+                        " ".repeat(space_width - space_width / 2),
+                        spinner_symbol
+                    );
+
+                    let target_file = target_base_dir.join(base_file);
+
+                    (*copy_queue.lock()).push_front((file.into_path(), target_file));
+                }
+
+                for copy_handler in copy_handlers {
+                    if let Err(e) = copy_handler.await {
+                        println!(
+                            "Some error occurred; cleaning up the templates directory first..."
+                        );
+                        std::fs::remove_dir_all(target_base_dir).ok();
+                        panic!("{}", e);
+                    };
+                }
+            }
+        });
 
         let new_template = Template {
             name: template_name,

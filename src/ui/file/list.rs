@@ -1,20 +1,12 @@
 use parking_lot::RwLock;
 use std::{
-    cmp::{max, min},
+    cmp::min,
     collections::{BTreeSet, HashMap},
     ops::Range,
     path::{Path, PathBuf},
     sync::Arc,
 };
-use tui::{
-    backend::Backend,
-    layout::Rect,
-    style::{Color, Modifier, Style},
-    widgets::Paragraph,
-};
 use uuid::Uuid;
-
-use super::FileListWidget;
 
 /// Entry in the [`FileList`].
 ///
@@ -223,7 +215,7 @@ impl<'path> FileList<'path> {
     ) -> bool {
         if let Some(answer) = {
             let lock = memo.read();
-            let value = (*lock).get(path).map(|x| *x);
+            let value = (*lock).get(path).copied();
             drop(lock);
             value
         } {

@@ -213,7 +213,7 @@ where
         let list_block = Block::default().borders(tui::widgets::Borders::ALL);
         let block_inner = list_block.inner(remaining);
         f.render_widget(list_block, remaining);
-        draw_list(&mut self.file_list, &mut self.file_widget, f, remaining);
+        draw_list(&mut self.file_list, &mut self.file_widget, f, block_inner);
     }
 }
 

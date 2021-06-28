@@ -5,7 +5,7 @@ use std::{
     fmt::Display,
     fs,
     hash::{Hash, Hasher},
-    io::{self, BufReader, BufWriter},
+    io::{BufReader, BufWriter},
     path::{Path, PathBuf},
 };
 

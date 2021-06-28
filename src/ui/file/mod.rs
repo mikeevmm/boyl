@@ -240,17 +240,17 @@ impl<'path, B: Backend> UiState<B> for FileTreeUi<'path> {
         match key {
             Key::Char('k') | Key::Up => {
                 self.file_list.go_up();
-                todo!()
+                None
             }
             Key::Char('j') | Key::Down => {
                 self.file_list.go_down();
-                todo!()
+                None
             }
             Key::Char('o') => {
                 self.file_list.toggle_folder();
-                todo!()
+                None
             }
-            Key::Char('\n') | Key::Char('\r') => Some(UiStateReaction::Exit),
+            Key::Char('\n') | Key::Char('\r') | Key::Ctrl('c') => Some(UiStateReaction::Exit),
             _ => None,
         }
     }
@@ -272,7 +272,7 @@ impl<'path, B: Backend> UiState<B> for FileTreeUi<'path> {
         let list_block = Block::default().borders(tui::widgets::Borders::ALL);
         let block_inner = list_block.inner(remaining);
         f.render_widget(list_block, remaining);
-        draw_list(&mut self.file_list, &mut self.file_widget, f, remaining);
+        draw_list(&mut self.file_list, &mut self.file_widget, f, block_inner);
     }
 }
 

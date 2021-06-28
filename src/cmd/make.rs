@@ -154,7 +154,7 @@ pub fn make(config: &mut LoadedConfig) {
         ui::run_ui(&mut ui_state);
 
         if ui_state.aborted {
-            return;
+            std::process::exit(exitcode::OK);
         }
         ui_state.file_list
     };
@@ -188,7 +188,7 @@ pub fn make(config: &mut LoadedConfig) {
                     }
                     false => {
                         println!("Aborting.");
-                        return;
+                        std::process::exit(exitcode::CONFIG);
                     }
                 }
             }

@@ -13,7 +13,6 @@ use config::LoadedConfig;
 use std::path::PathBuf;
 use userpath::{user_path_exists, user_path_to_path};
 
-
 macro_rules! clone_move {
     (mut $x:ident) => {
         let mut $x = $x.clone();
@@ -83,7 +82,7 @@ fn main() {
             App::new(cmd::tree::CMD_STR)
                 .about("Shows the tree structure of a template.")
                 .arg(
-                    Arg::with_name(cmd::new::TEMPLATE_ARG)
+                    Arg::with_name(cmd::tree::TEMPLATE_ARG)
                         .help("The project template to examine")
                         .long_help(
                             "The project template to examine. Should be one \
@@ -137,7 +136,10 @@ fn main() {
                         }),
                 ),
         )
-        .subcommand(App::new("edit").about("Starts an interactive project management prompt."))
+        .subcommand(
+            App::new(cmd::edit::CMD_STR).about("Starts an interactive project management prompt."),
+        )
+        .subcommand(App::new(cmd::heart::CMD_STR))
         .get_matches();
 
     let config_path = matches
@@ -168,7 +170,14 @@ fn main() {
             cmd::list::list(&config);
         }
         (cmd::tree::CMD_STR, Some(sub_matches)) => {
-            todo!()
+            let template = sub_matches.value_of(cmd::tree::TEMPLATE_ARG).unwrap();
+            cmd::tree::tree(&config, template);
+        }
+        (cmd::edit::CMD_STR, _) => {
+            cmd::edit::edit();
+        }
+        (cmd::heart::CMD_STR, _) => {
+            cmd::heart::heart();
         }
         (name, _) => panic!("Unimplemented subcommand {}", name),
     }

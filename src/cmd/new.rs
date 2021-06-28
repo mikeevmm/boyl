@@ -50,7 +50,7 @@ pub fn new(config: &LoadedConfig, template: &str, name: Option<&str>, location_s
                 "boyl list".yellow(),
                 "boyl make".yellow(),
             );
-            return;
+            std::process::exit(exitcode::USAGE);
         }
     };
     let name = name.unwrap_or(&template.name);
@@ -61,12 +61,12 @@ pub fn new(config: &LoadedConfig, template: &str, name: Option<&str>, location_s
                 ErrorKind::NotFound => location_error(LocationErrorKind::NotExists, location_str),
                 _ => location_error(LocationErrorKind::Unknown(Box::new(err)), location_str),
             };
-            return;
+            std::process::exit(exitcode::USAGE);
         }
     };
     if !location.is_dir() {
         location_error(LocationErrorKind::NotADir, location_str);
-        return;
+        std::process::exit(exitcode::USAGE);
     }
 
     let target_base_dir = location.join(name);
@@ -76,7 +76,7 @@ pub fn new(config: &LoadedConfig, template: &str, name: Option<&str>, location_s
             "{} already exists, and is not empty.",
             target_base_dir.to_string_lossy()
         );
-        return;
+        std::process::exit(exitcode::USAGE);
     }
 
     let tokio_runtime = tokio::runtime::Builder::new_multi_thread().build().unwrap();
@@ -95,7 +95,7 @@ pub fn new(config: &LoadedConfig, template: &str, name: Option<&str>, location_s
 
     println!(
         "{} {} {} {}",
-        "Created new".green(),
+        "Created new template".green(),
         template.name,
         "in".green(),
         target_base_dir.to_string_lossy()

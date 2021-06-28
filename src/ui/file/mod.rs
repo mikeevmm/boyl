@@ -1,10 +1,7 @@
 use self::list::FileList;
-use super::input::InputField;
+use super::{help, input::InputField};
 use crate::ui::{layout::VisualBox, UiState, UiStateReaction};
-use std::{
-    cmp::{max, min},
-    path::Path,
-};
+use std::{cmp::min, path::Path};
 use termion::event::Key;
 use tui::{
     backend::Backend,
@@ -58,59 +55,18 @@ impl<'path> FilePickerUi<'path> {
     }
 
     fn draw_help(&self, f: &mut tui::Frame<impl Backend>, buffer_rect: Rect) -> Rect {
-        let mut help_texts = vec![];
-        let mut help_boxes = vec![];
-        let mut make_help_box = |button: &'static str, info: &'static str| {
-            let help_text = format!("[{}] {}", button, info);
-            let help_box = VisualBox::new(help_text.len() as u16, 1);
-            help_texts.push(help_text);
-            help_boxes.push(help_box);
-        };
-
-        make_help_box("Up/K", "Move up in list");
-        make_help_box("Down/J", "Move down in list");
-        make_help_box("O", "Open/Close folder");
-        make_help_box("X", "Exclude/Include file");
-        make_help_box("Z", "Exclude pattern");
-        make_help_box("R", "Reset");
-        make_help_box("Enter", "Finish");
-
-        let positions = crate::ui::layout::distribute(buffer_rect.width, &help_boxes);
-        let new_height = min(
-            positions.last().unwrap().1 - positions[0].1 + 1,
-            buffer_rect.height,
-        );
-        let start_y = max(
-            buffer_rect.bottom().saturating_sub(new_height),
-            buffer_rect.top(),
-        );
-
-        // Draw a green background (a bit hacky)
-        f.render_widget(
-            Block::default().style(Style::default().bg(Color::Green).fg(Color::Black)),
-            Rect::new(buffer_rect.left(), start_y, buffer_rect.width, new_height),
-        );
-        // Draw the labels
-        for ((x, y), text) in positions.iter().zip(help_texts) {
-            let x = x + buffer_rect.left();
-            let y = y + start_y;
-
-            if y > buffer_rect.bottom() {
-                break;
-            }
-
-            let width = text.len() as u16;
-            let height = min(1, buffer_rect.height);
-            let y = min(y, buffer_rect.bottom().saturating_sub(1));
-            f.render_widget(Paragraph::new(text), Rect::new(x, y, width, height));
-        }
-
-        Rect::new(
-            buffer_rect.left(),
-            buffer_rect.top(),
-            buffer_rect.width,
-            buffer_rect.height - new_height,
-        )
+        let (help_texts, help_boxes): (Vec<String>, Vec<VisualBox>) = vec![
+            super::help::make_help_box("Up/K", "Move up in list"),
+            super::help::make_help_box("Down/J", "Move down in list"),
+            super::help::make_help_box("O", "Open/Close folder"),
+            super::help::make_help_box("X", "Exclude/Include file"),
+            super::help::make_help_box("Z", "Exclude pattern"),
+            super::help::make_help_box("R", "Reset"),
+            super::help::make_help_box("Enter", "Finish"),
+        ]
+        .into_iter()
+        .unzip();
+        help::draw_help(help_texts, help_boxes, f, buffer_rect)
     }
 
     fn draw_prompt(
@@ -159,70 +115,6 @@ impl<'path> FilePickerUi<'path> {
         f.render_widget(error_paragraph, paragraph_rect);
 
         remaining
-    }
-
-    fn draw_list(&mut self, f: &mut tui::Frame<impl Backend>, size: Rect) {
-        if self.file_list.highlight < self.file_widget.buffer_start {
-            self.file_widget.buffer_start = self.file_list.highlight;
-        } else if self.file_list.highlight
-            > (self.file_widget.buffer_start + size.height as usize).saturating_sub(1)
-        {
-            self.file_widget.buffer_start = self
-                .file_list
-                .highlight
-                .saturating_sub(size.height as usize)
-                + 1;
-        }
-
-        let list_size = self.file_list.len();
-        let buffer_start = self.file_widget.buffer_start;
-        let buffer_end = min(
-            self.file_widget.buffer_start + size.height as usize,
-            list_size,
-        );
-        for (i, list_elem) in self
-            .file_list
-            .iter_paths(buffer_start..buffer_end)
-            .enumerate()
-        {
-            let show_up_indicator = i == 0 && buffer_start > 0;
-            let show_down_indicator =
-                list_size > size.height as usize && i == (buffer_end - buffer_start - 1);
-            let highlighted = self.file_list.highlight == buffer_start + i;
-            let render_y = size.top() + i as u16;
-
-            if show_up_indicator || show_down_indicator {
-                let indicator = if show_up_indicator { "▲" } else { "▼" };
-                let render_to = Rect::new(size.right().saturating_sub(1), render_y, 1, 1);
-                f.render_widget(Paragraph::new(indicator), render_to);
-            }
-
-            let mut line_width = size.width;
-            if show_up_indicator || show_down_indicator {
-                line_width = line_width.saturating_sub(1)
-            }
-
-            // We wish to have text left-aligned, but to show the ending of the path
-            // if it is too big to fit in the frame.
-            let file_width = max(20, (size.width as usize).saturating_sub(list_elem.depth));
-            let file_name = list_elem.path.to_string_lossy();
-            let file_name = &file_name[file_name.len().saturating_sub(file_width)..file_name.len()];
-
-            let mut file_name_style = Style::default();
-            if highlighted {
-                file_name_style = file_name_style.bg(Color::DarkGray).fg(Color::White);
-            }
-            if !list_elem.included {
-                file_name_style = file_name_style.add_modifier(Modifier::DIM);
-            }
-            if list_elem.path.is_dir() {
-                file_name_style = file_name_style.add_modifier(Modifier::BOLD | Modifier::ITALIC);
-            }
-            let indented_file_name = format!("{}{}", " ".repeat(list_elem.depth), file_name);
-            let file_name_paragraph = Paragraph::new(indented_file_name).style(file_name_style);
-            let render_to = Rect::new(size.left(), render_y, line_width, 1);
-            f.render_widget(file_name_paragraph, render_to);
-        }
     }
 
     fn ignore_pattern(&mut self, pattern: String) -> Result<(), Box<dyn std::error::Error>> {
@@ -321,6 +213,123 @@ where
         let list_block = Block::default().borders(tui::widgets::Borders::ALL);
         let block_inner = list_block.inner(remaining);
         f.render_widget(list_block, remaining);
-        self.draw_list(f, block_inner);
+        draw_list(&mut self.file_list, &mut self.file_widget, f, remaining);
+    }
+}
+
+pub struct FileTreeUi<'path> {
+    file_list: FileList<'path>,
+    file_widget: FileListWidget,
+}
+
+impl<'path> FileTreeUi<'path> {
+    pub fn new(base_dir: &'path Path) -> Self {
+        FileTreeUi {
+            file_list: FileList::new(base_dir),
+            file_widget: FileListWidget::default(),
+        }
+    }
+}
+
+impl<'path, B: Backend> UiState<B> for FileTreeUi<'path> {
+    fn require_ticking(&self) -> Option<std::time::Duration> {
+        None
+    }
+
+    fn on_key(&mut self, key: Key) -> Option<crate::ui::UiStateReaction> {
+        match key {
+            Key::Char('k') | Key::Up => {
+                self.file_list.go_up();
+                todo!()
+            }
+            Key::Char('j') | Key::Down => {
+                self.file_list.go_down();
+                todo!()
+            }
+            Key::Char('o') => {
+                self.file_list.toggle_folder();
+                todo!()
+            }
+            Key::Char('\n') | Key::Char('\r') => Some(UiStateReaction::Exit),
+            _ => None,
+        }
+    }
+
+    fn on_tick(&mut self) -> Option<crate::ui::UiStateReaction> {
+        None
+    }
+
+    fn draw(&mut self, f: &mut tui::Frame<B>) {
+        let (help_texts, help_boxes): (Vec<String>, Vec<VisualBox>) = vec![
+            super::help::make_help_box("Up/K", "Move up in list"),
+            super::help::make_help_box("Down/J", "Move down in list"),
+            super::help::make_help_box("O", "Open/Close folder"),
+            super::help::make_help_box("Enter", "Exit"),
+        ]
+        .into_iter()
+        .unzip();
+        let remaining = crate::ui::help::draw_help(help_texts, help_boxes, f, f.size());
+        let list_block = Block::default().borders(tui::widgets::Borders::ALL);
+        let block_inner = list_block.inner(remaining);
+        f.render_widget(list_block, remaining);
+        draw_list(&mut self.file_list, &mut self.file_widget, f, remaining);
+    }
+}
+
+fn draw_list(
+    file_list: &mut FileList,
+    file_widget: &mut FileListWidget,
+    f: &mut tui::Frame<impl Backend>,
+    size: Rect,
+) {
+    if file_list.highlight < file_widget.buffer_start {
+        file_widget.buffer_start = file_list.highlight;
+    } else if file_list.highlight
+        > (file_widget.buffer_start + size.height as usize).saturating_sub(1)
+    {
+        file_widget.buffer_start = file_list.highlight.saturating_sub(size.height as usize) + 1;
+    }
+
+    let list_size = file_list.len();
+    let buffer_start = file_widget.buffer_start;
+    let buffer_end = min(file_widget.buffer_start + size.height as usize, list_size);
+    for (i, list_elem) in file_list.iter_paths(buffer_start..buffer_end).enumerate() {
+        let show_up_indicator = i == 0 && buffer_start > 0;
+        let show_down_indicator =
+            list_size > size.height as usize && i == (buffer_end - buffer_start - 1);
+        let highlighted = file_list.highlight == buffer_start + i;
+        let render_y = size.top() + i as u16;
+
+        if show_up_indicator || show_down_indicator {
+            let indicator = if show_up_indicator { "▲" } else { "▼" };
+            let render_to = Rect::new(size.right().saturating_sub(1), render_y, 1, 1);
+            f.render_widget(Paragraph::new(indicator), render_to);
+        }
+
+        let mut line_width = size.width;
+        if show_up_indicator || show_down_indicator {
+            line_width = line_width.saturating_sub(1)
+        }
+
+        // We wish to have text left-aligned, but to show the ending of the path
+        // if it is too big to fit in the frame.
+        let file_width = std::cmp::max(20, (size.width as usize).saturating_sub(list_elem.depth));
+        let file_name = list_elem.path.to_string_lossy();
+        let file_name = &file_name[file_name.len().saturating_sub(file_width)..file_name.len()];
+
+        let mut file_name_style = Style::default();
+        if highlighted {
+            file_name_style = file_name_style.bg(Color::DarkGray).fg(Color::White);
+        }
+        if !list_elem.included {
+            file_name_style = file_name_style.add_modifier(Modifier::DIM);
+        }
+        if list_elem.path.is_dir() {
+            file_name_style = file_name_style.add_modifier(Modifier::BOLD | Modifier::ITALIC);
+        }
+        let indented_file_name = format!("{}{}", " ".repeat(list_elem.depth), file_name);
+        let file_name_paragraph = Paragraph::new(indented_file_name).style(file_name_style);
+        let render_to = Rect::new(size.left(), render_y, line_width, 1);
+        f.render_widget(file_name_paragraph, render_to);
     }
 }

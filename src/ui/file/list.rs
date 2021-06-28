@@ -1,12 +1,20 @@
 use parking_lot::RwLock;
 use std::{
-    cmp::min,
+    cmp::{max, min},
     collections::{BTreeSet, HashMap},
     ops::Range,
     path::{Path, PathBuf},
     sync::Arc,
 };
+use tui::{
+    backend::Backend,
+    layout::Rect,
+    style::{Color, Modifier, Style},
+    widgets::Paragraph,
+};
 use uuid::Uuid;
+
+use super::FileListWidget;
 
 /// Entry in the [`FileList`].
 ///
@@ -26,7 +34,7 @@ struct FileListItem {
 }
 
 /// A list display of a file tree, where directories in the tree can be expanded
-/// and contracted.
+/// and contracted, and files can be included or excluded.
 pub struct FileList<'path> {
     base_path: &'path Path,
     /// Map from UUID keys to `FileListItem`.

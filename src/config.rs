@@ -44,9 +44,9 @@ impl Default for Config {
 }
 
 impl Config {
-    pub fn get_template_key(template: &Template) -> u64 {
+    pub fn get_template_key(template_name: &str) -> u64 {
         let mut hasher = DefaultHasher::default();
-        template.name.hash(&mut hasher);
+        template_name.hash(&mut hasher);
         hasher.finish()
     }
 
@@ -62,7 +62,7 @@ impl Config {
     /// inserted in the tree an `Ok` is returned. Both `Result`s contain
     /// the key of the given template.
     pub fn insert_template(&mut self, template: Template) -> Result<TemplateKey, TemplateKey> {
-        let key = Config::get_template_key(&template);
+        let key = Config::get_template_key(&template.name);
         if self.templates.get(&key).is_some() {
             return Err(key);
         }

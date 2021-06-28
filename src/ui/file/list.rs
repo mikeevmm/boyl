@@ -1,8 +1,10 @@
+use parking_lot::RwLock;
 use std::{
     cmp::min,
     collections::{BTreeSet, HashMap},
     ops::Range,
     path::{Path, PathBuf},
+    sync::Arc,
 };
 use uuid::Uuid;
 
@@ -206,8 +208,17 @@ impl<'path> FileList<'path> {
     ///
     /// This function expects the provided path to be a subpath of `self.base_path`.
     /// If this is not the case, behaviour is undefined.
-    pub fn is_included_memoized(&self, path: &Path, memo: &mut HashMap<PathBuf, bool>) -> bool {
-        if let Some(&answer) = memo.get(path) {
+    pub fn is_included_memoized_async(
+        &self,
+        path: &Path,
+        memo: Arc<RwLock<HashMap<PathBuf, bool>>>,
+    ) -> bool {
+        if let Some(answer) = {
+            let lock = memo.read();
+            let value = (*lock).get(path).map(|x| *x);
+            drop(lock);
+            value
+        } {
             return answer;
         }
         let answer = if let Some(id) = self.file_keys.get(path) {
@@ -215,13 +226,17 @@ impl<'path> FileList<'path> {
         } else {
             // We have not seen this file. This may be because
             // it is in a subdirectory that was not enumerated.
-            self.is_included_memoized(
+            self.is_included_memoized_async(
                 path.parent()
                     .expect("Expected the file path to have a parent."),
-                memo,
+                memo.clone(),
             )
         };
-        memo.insert(path.into(), answer);
+        if path.is_dir() {
+            let mut lock = memo.write();
+            (*lock).insert(path.into(), answer);
+            drop(lock);
+        }
         answer
     }
 
@@ -230,7 +245,7 @@ impl<'path> FileList<'path> {
         if exclude_exception {
             return true;
         }
-        
+
         let self_excluded = self.exclude_explicit.contains(uuid)
             || self
                 .exclude_patterns

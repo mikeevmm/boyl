@@ -10,57 +10,29 @@ extern crate tokio;
 
 use clap::{App, AppSettings, Arg};
 use config::LoadedConfig;
-use num_traits::PrimInt;
-use std::{
-    io,
-    path::{self, PathBuf},
-};
+use std::path::PathBuf;
+use userpath::{user_path_exists, user_path_to_path};
+
+
+macro_rules! clone_move {
+    (mut $x:ident) => {
+        let mut $x = $x.clone();
+    };
+    ($x:ident) => {
+        let $x = $x.clone();
+    };
+}
 
 mod cmd;
 mod config;
+mod copy;
 mod template;
 #[allow(dead_code)]
 mod ui;
+mod userpath;
+mod walkdir;
 
 const VERSION: &str = "0.0.1";
-
-#[derive(Debug, PartialEq, Eq, PartialOrd, Ord)]
-pub enum Verbosity {
-    None,
-    Some,
-    Very,
-}
-
-impl<X> From<X> for Verbosity
-where
-    X: PrimInt,
-{
-    fn from(value: X) -> Self {
-        if value.lt(&X::from(1).unwrap()) {
-            Verbosity::None
-        } else if value.lt(&X::from(2).unwrap()) {
-            Verbosity::Some
-        } else {
-            Verbosity::Very
-        }
-    }
-}
-
-/// Converts a user specified path (potentially using ~) to a
-/// canonicalized PathBuf.
-///
-/// This function returns a `Result` as the `canonicalized()`
-/// call can fail if, for example, the given path does not
-/// exist.
-fn user_path_to_path(path: &str) -> io::Result<PathBuf> {
-    path::Path::new(&shellexpand::tilde(path).to_owned().to_string()).canonicalize()
-}
-
-/// Checks whether a user specified path (potentially using ~)
-/// exists.
-fn user_path_exists(path: &str) -> bool {
-    user_path_to_path(path).map_or(false, |p| p.exists())
-}
 
 /// Gets the default directory for boyl's configuration files,
 /// namely `(default config directory)/boyl`, where the default
@@ -88,16 +60,9 @@ fn write_config_or_fail(config: &LoadedConfig) {
 fn main() {
     let matches = App::new("boyl")
         .version(VERSION)
-        .author("Miguel Murça <zvthryzhepn+obly+rot13@gmail.com>")
+        .author("Miguel Murça <mikeevmm@github>")
         .about("Quickly create boilerplate projects and templates.")
         .setting(AppSettings::SubcommandRequiredElseHelp)
-        .arg(
-            Arg::with_name("v")
-                .short("-v")
-                .multiple(true)
-                .help("Sets the level of verbosity")
-                .global(true),
-        )
         .arg(
             Arg::with_name("config_dir")
                 .hidden(true)
@@ -149,9 +114,9 @@ fn main() {
                         .help("The name for the new project")
                         .long_help(
                             "The name for the new project. \
-                            This will be the name of the created folder.",
-                        )
-                        .required(true),
+                            This will be the name of the created folder. \
+                            By default takes the same name as the template.",
+                        ),
                 )
                 .arg(
                     Arg::with_name(cmd::new::LOCATION_ARG)
@@ -160,7 +125,7 @@ fn main() {
                         .long_help(
                             "Where to create the specified boilerplate \
                             project. Defaults to the current directory. This argument \
-                            specifies the *parent* directory to the project, as a new \
+                            specifies the parent directory to the project, as a new \
                             folder will be created for the project.",
                         )
                         .validator(|arg_str| {
@@ -175,7 +140,6 @@ fn main() {
         .subcommand(App::new("edit").about("Starts an interactive project management prompt."))
         .get_matches();
 
-    let verbosity = Verbosity::from(matches.occurrences_of("v"));
     let config_path = matches
         .value_of("config_dir")
         .map_or_else(default_config_dir, |user_path| {
@@ -191,10 +155,13 @@ fn main() {
 
     match matches.subcommand() {
         (cmd::new::CMD_STR, Some(sub_matches)) => {
-            todo!()
+            let template = sub_matches.value_of(cmd::new::TEMPLATE_ARG).unwrap();
+            let name = sub_matches.value_of(cmd::new::NAME_ARG);
+            let location = sub_matches.value_of(cmd::new::LOCATION_ARG).unwrap();
+            cmd::new::new(&config, template, name, location);
         }
         (cmd::make::CMD_STR, Some(_)) => {
-            cmd::make::make(&mut config, verbosity);
+            cmd::make::make(&mut config);
             write_config_or_fail(&config);
         }
         (cmd::list::CMD_STR, Some(_)) => {

@@ -25,7 +25,7 @@ mod userpath;
 mod userbool;
 mod walkdir;
 
-const VERSION: &str = "0.0.1";
+const VERSION: &str = "0.1.0";
 
 #[derive(FromArgs)]
 /// Quickly create boilerplate projects and templates.

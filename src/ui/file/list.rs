@@ -9,12 +9,7 @@ use std::{
 use uuid::Uuid;
 
 /// Entry in the [`FileList`].
-///
-/// Contains information about the surrounding elements (directory-wise),
-/// forming a sort of doubly linked list when in the context of a [`FileList`].
 struct FileListItem {
-    last_sibling: Option<Uuid>,
-    next_sibling: Option<Uuid>,
     /// The UUID of the `FileListItem` corresponding to the parent directory
     /// file for this file.
     parent: Option<Uuid>,
@@ -57,7 +52,6 @@ impl<'path> FileList<'path> {
     pub fn new(base_path: &'path Path) -> Self {
         let mut file_items = HashMap::<Uuid, FileListItem>::new();
         let mut file_keys = HashMap::<PathBuf, Uuid>::new();
-        let mut last = None;
         let mut file_list = vec![];
         for base_child in base_path
             .read_dir()
@@ -66,8 +60,6 @@ impl<'path> FileList<'path> {
         {
             let key = Uuid::new_v4();
             let item = FileListItem {
-                last_sibling: last,
-                next_sibling: None,
                 parent: None,
                 open: false,
                 path: base_child.path(),
@@ -75,10 +67,6 @@ impl<'path> FileList<'path> {
             };
             file_items.insert(key, item);
             file_keys.insert(base_child.path(), key);
-            if let Some(last) = last {
-                file_items.get_mut(&last).unwrap().next_sibling = Some(key);
-            }
-            last = Some(key);
             file_list.push(key);
         }
 
@@ -320,7 +308,6 @@ impl<'path> FileList<'path> {
     fn index_dir(&mut self, file_key: &Uuid) {
         let file_item = self.file_items.get(file_key).unwrap();
 
-        let mut last = None;
         let child_depth = file_item.depth + 1;
         for child_dir in file_item
             .path
@@ -330,8 +317,6 @@ impl<'path> FileList<'path> {
         {
             let key = Uuid::new_v4();
             let item = FileListItem {
-                last_sibling: last,
-                next_sibling: None,
                 parent: Some(*file_key),
                 open: false,
                 path: child_dir.path(),
@@ -339,10 +324,6 @@ impl<'path> FileList<'path> {
             };
             self.file_items.insert(key, item);
             self.file_keys.insert(child_dir.path(), key);
-            if let Some(last) = last {
-                self.file_items.get_mut(&last).unwrap().next_sibling = Some(key);
-            }
-            last = Some(key);
         }
 
         self.indexed.insert(*file_key);

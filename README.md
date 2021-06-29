@@ -1,5 +1,23 @@
 # `boyl`
 
+`boyl` is a command line tool written in Rust to manage template folders.
+
+`boyl` can copy existing folders (with support for glob-like ignore patterns) to
+a persistent location, and provides an interface to instantiate new copies of
+these templates, list the available templates, and remove templates.
+
+## Installation
+
+You can find pre-built binaries in the [releases][releases] page.
+
+If you wish to build `boyl` from source, you can do so with `cargo`:
+
+```
+cargo install --git https://github.com/mikeevmm/boyl
+```
+
+[releases]: https://github.com/mikeevmm/boyl/releases
+
 ## FAQ
 
 ### Why should I use `boyl` rather than cargo/npm/gradle/etc?

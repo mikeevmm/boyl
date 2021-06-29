@@ -1,11 +1,6 @@
 use colored::Colorize;
 use shellexpand::LookupError;
-use std::{
-    env::VarError,
-    io,
-    path::{self, PathBuf},
-    str::FromStr,
-};
+use std::{env::VarError, io, path::PathBuf, str::FromStr};
 
 #[derive(Clone, PartialEq, Eq)]
 pub struct UserDir {

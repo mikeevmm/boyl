@@ -1,8 +1,15 @@
-use crate::{config::LoadedConfig, template::Template, ui::{self}, userpath::UserDir, walkdir};
+use crate::userbool::UserBool;
+use crate::{
+    config::{Config, LoadedConfig},
+    template::Template,
+    ui::{self},
+    userpath::UserDir,
+    walkdir,
+};
 use colored::Colorize;
 use futures::StreamExt;
 use parking_lot::RwLock;
-use std::{collections::HashMap, path::PathBuf, str::FromStr, sync::Arc};
+use std::{collections::HashMap, path::PathBuf, sync::Arc};
 
 use read_input::prelude::*;
 
@@ -10,31 +17,6 @@ const ERR_PATH: &str = "Cannot understand path.";
 const ERR_NO_EXIST: &str = "Path does not exist.";
 const ERR_NOT_DIR: &str = "Path is not a directory.";
 const ERR_NAME_TAKEN: &str = "There is already a template of that name.";
-
-struct UserBool {
-    value: bool,
-}
-
-impl From<bool> for UserBool {
-    fn from(value: bool) -> Self {
-        UserBool { value }
-    }
-}
-
-impl FromStr for UserBool {
-    type Err = String;
-
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let s = s.to_lowercase();
-        if s == "n" || s == "no" || s == "false" {
-            Ok(false.into())
-        } else if s == "y" || s == "yes" || s == "true" {
-            Ok(true.into())
-        } else {
-            Err(format!("Cannot understand {}", s))
-        }
-    }
-}
 
 pub fn make(config: &mut LoadedConfig) {
     let current_dir = std::env::current_dir().ok();
@@ -213,5 +195,10 @@ pub fn make(config: &mut LoadedConfig) {
         description: template_description,
         path: target_base_dir,
     };
-    config.config.insert_template(new_template).unwrap();
+    let new_template_key = Config::get_template_key(&new_template.name);
+    config
+        .config
+        .templates
+        .insert(new_template_key, new_template)
+        .unwrap();
 }

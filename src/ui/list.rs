@@ -4,13 +4,23 @@ use tui::{
     backend::Backend,
     layout::Rect,
     style::{Color, Style},
-    text::Text,
+    text::{Spans, Text},
     widgets::Paragraph,
 };
 
+pub trait ListElement<'t> {
+    fn get_list_element(&self) -> Text<'t>;
+}
+
+impl<'t> ListElement<'t> for Spans<'t> {
+    fn get_list_element(&self) -> Text<'t> {
+        self.clone().into()
+    }
+}
+
 pub struct List<'t, T>
 where
-    T: Into<Text<'t>>,
+    T: ListElement<'t>,
 {
     phantom: PhantomData<&'t T>,
     highlight: usize,
@@ -20,7 +30,7 @@ where
 
 impl<'t, T> List<'t, T>
 where
-    T: Into<Text<'t>>,
+    T: ListElement<'t>,
 {
     pub fn new(elements: Vec<T>) -> Self {
         List {
@@ -83,9 +93,9 @@ where
             if highlighted {
                 entry_style = entry_style.bg(Color::DarkGray).fg(Color::White);
             }
-            //let entry_paragraph = Paragraph::new(list_elem).style(entry_style);
+            let entry_paragraph = Paragraph::new(list_elem.get_list_element()).style(entry_style);
             let render_to = Rect::new(size.left(), render_y, line_width, 1);
-            //f.render_widget(entry_paragraph, render_to);
+            f.render_widget(entry_paragraph, render_to);
         }
     }
 }

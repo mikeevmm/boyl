@@ -74,26 +74,6 @@ impl Config {
         hasher.finish()
     }
 
-    /// Inserts a template into the `config`'s `templates` `BTreeMap`.
-    /// The key is calculated from the template by the same mechanism
-    /// as `Config::get_template_key`.
-    ///
-    /// # Returns
-    ///
-    /// Because keys should be unique for significantly different
-    /// templates, if the key is already found in the tree, no insertion
-    /// is made an an `Err` is returned. Otherwise, the template is
-    /// inserted in the tree an `Ok` is returned. Both `Result`s contain
-    /// the key of the given template.
-    pub fn insert_template(&mut self, template: Template) -> Result<TemplateKey, TemplateKey> {
-        let key = Config::get_template_key(&template.name);
-        if self.templates.get(&key).is_some() {
-            return Err(key);
-        }
-        self.templates.insert(key, template);
-        Ok(key)
-    }
-
     /// Deserialize a `Config` object from an in-disk `JSON` representation.
     ///
     /// # Returns

@@ -3,9 +3,7 @@ extern crate serde;
 
 use argh::FromArgs;
 use colored::Colorize;
-use config::LoadedConfig;
-use std::{path::PathBuf, str::FromStr};
-use userpath::{to_user_path, UserDir};
+use userpath::to_user_path;
 
 use crate::config::default_config_dir;
 
@@ -25,6 +23,7 @@ mod template;
 #[allow(dead_code)]
 mod ui;
 mod userpath;
+mod userbool;
 mod walkdir;
 
 const VERSION: &str = "0.0.1";
@@ -43,7 +42,7 @@ enum Command {
     Tree(TreeCommand),
     Make(MakeCommand),
     New(NewCommand),
-    Edit(EditCommand),
+    Delete(DeleteCommand),
     Xoxo(XoxoCommand),
     Version(VersionCommand),
 }
@@ -95,9 +94,16 @@ struct NewCommand {
 }
 
 #[derive(FromArgs, PartialEq, Debug)]
-/// Starts an interactive project management prompt.
-#[argh(subcommand, name = "edit")]
-struct EditCommand {}
+/// Delete an existing template.
+#[argh(subcommand, name = "delete")]
+struct DeleteCommand {
+    #[argh(positional)]
+    /// the template to delete
+    ///
+    /// Use the `list` command to find what templates exist.
+    /// Deletion is irreversible.
+    template: String,
+}
 
 #[derive(FromArgs, PartialEq, Debug)]
 /// Print the current version.
@@ -142,7 +148,10 @@ fn main() {
         Command::New(new) => {
             cmd::new::new(&config, &new.template, new.name.as_deref(), new.location)
         }
-        Command::Edit(_) => cmd::edit::edit(&config),
+        Command::Delete(delete) => {
+            cmd::delete::delete(&mut config, &delete.template);
+            config::write_config_or_fail(&config);
+        }
         Command::Xoxo(_) => cmd::xoxo::xoxo(),
         Command::Version(_) => cmd::version::version(),
     }

@@ -1,3 +1,3 @@
 pub fn version() {
-    println!("{}", crate::VERSION);
+    println!("boyl v{}", crate::VERSION);
 }

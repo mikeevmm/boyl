@@ -10,7 +10,6 @@ use tui::{
     backend::Backend,
     layout::Rect,
     style::{Color, Modifier, Style},
-    text::{Span, Spans},
     widgets::{Block, Paragraph},
 };
 

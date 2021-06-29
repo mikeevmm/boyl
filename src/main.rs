@@ -56,9 +56,9 @@ struct ListCommand {}
 #[argh(subcommand, name = "tree")]
 struct TreeCommand {
     #[argh(positional)]
-    /// the project template to examine
+    /// the project template to examine:
     ///
-    /// Should be one of the template names listed with `list`.
+    /// should be one of the template names listed with `list`.
     template: String,
 }
 
@@ -72,21 +72,21 @@ struct MakeCommand {}
 #[argh(subcommand, name = "new")]
 struct NewCommand {
     #[argh(positional)]
-    /// the project template to use
+    /// the project template to use:
     ///
-    /// Use the `list` command to find what templates are available,
+    /// use the `list` command to find what templates are available,
     /// or create a new template with `make`.
     template: String,
     #[argh(option)]
-    /// the name for the new project
+    /// the name for the new project:
     ///
-    /// This will be the name of the created folder.
+    /// this will be the name of the created folder.
     /// By default takes the same name as the template.
     name: Option<String>,
     #[argh(option, from_str_fn(to_user_path))]
-    /// where to create the new project
+    /// where to create the new project:
     ///
-    /// Defaults to the current directory. This argument
+    /// defaults to the current directory. This argument
     /// specifies the parent directory to the project, as a new
     /// folder will be created for the project.
     location: Option<userpath::UserDir>,
@@ -97,9 +97,9 @@ struct NewCommand {
 #[argh(subcommand, name = "delete")]
 struct DeleteCommand {
     #[argh(positional)]
-    /// the template to delete
+    /// the template to delete:
     ///
-    /// Use the `list` command to find what templates exist.
+    /// use the `list` command to find what templates exist.
     /// Deletion is irreversible.
     template: String,
 }

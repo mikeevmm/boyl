@@ -20,7 +20,6 @@ mod cmd;
 mod config;
 mod copy;
 mod template;
-#[allow(dead_code)]
 mod ui;
 mod userpath;
 mod userbool;

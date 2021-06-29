@@ -1,5 +1,8 @@
 use self::list::FileList;
-use super::{help, input::InputField};
+use super::{
+    help,
+    input::{self, InputField},
+};
 use crate::ui::{layout::VisualBox, UiState, UiStateReaction};
 use std::{cmp::min, path::Path};
 use termion::event::Key;
@@ -75,32 +78,12 @@ impl<'path> FilePickerUi<'path> {
         size: Rect,
         input_field: &mut InputField,
     ) -> Rect {
-        let prompt_rect = Rect::new(size.left(), size.bottom() - 1, size.width, 1);
-        let remaining = Rect::new(size.left(), size.top(), size.width, size.height - 1);
-
-        let prompt_text = if prompt_rect.width > 45 {
+        let prompt_text = if size.width > 45 {
             "Ignore pattern: "
         } else {
             ":"
         };
-        let (shown_input, highlighted) =
-            input_field.render(remaining.width - prompt_text.len() as u16);
-
-        f.render_widget(
-            Paragraph::new(vec![Spans::from(vec![
-                Span::styled(prompt_text, Style::default().add_modifier(Modifier::BOLD)),
-                Span::raw(&shown_input[0..highlighted]),
-                Span::styled(
-                    shown_input.chars().nth(highlighted).unwrap().to_string(),
-                    Style::default().bg(Color::White).fg(Color::Black),
-                ),
-                Span::raw(&shown_input[highlighted + 1..]),
-            ])])
-            .style(Style::default().bg(Color::Green).fg(Color::Black)),
-            prompt_rect,
-        );
-
-        remaining
+        input::draw_input(f, size, input_field, prompt_text)
     }
 
     fn draw_error(&self, f: &mut tui::Frame<impl Backend>, message: &'_ str) -> Rect {
@@ -282,6 +265,9 @@ fn draw_list(
     f: &mut tui::Frame<impl Backend>,
     size: Rect,
 ) {
+    if file_list.len() == 0 {
+        return;
+    }
     if file_list.highlight < file_widget.buffer_start {
         file_widget.buffer_start = file_list.highlight;
     } else if file_list.highlight

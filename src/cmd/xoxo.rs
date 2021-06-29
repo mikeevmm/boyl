@@ -1,8 +1,6 @@
 use colored::Colorize;
 
-pub const CMD_STR: &'static str = "xoxo";
-
-pub fn heart() {
+pub fn xoxo() {
     println!(
         "Hi, I'm Miguel, and I made Boyl.
 Boyl is free and open source, but if you like and/or use Boyl often,

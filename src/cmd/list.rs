@@ -1,8 +1,6 @@
 use crate::config::LoadedConfig;
 use colored::Colorize;
 
-pub const CMD_STR: &str = "list";
-
 pub fn list(config: &LoadedConfig) {
     for template in config.config.templates.values() {
         println!(

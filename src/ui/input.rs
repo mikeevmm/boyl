@@ -1,5 +1,7 @@
 use std::cmp::min;
 
+use tui::{backend::Backend, layout::Rect, style::{Color, Modifier, Style}, text::{Span, Spans}, widgets::Paragraph};
+
 /// A single-line input field, with a caret.
 ///
 /// This struct does not handle translating user input to actions on the input
@@ -76,4 +78,33 @@ impl InputField {
     pub fn consume_input(&self) -> String {
         self.input_buffer[..self.input_buffer.len() - 1].to_string()
     }
+}
+
+pub fn draw_input(
+    f: &mut tui::Frame<impl Backend>,
+    size: Rect,
+    input_field: &mut InputField,
+    prompt_text: &str,
+) -> Rect {
+    let prompt_rect = Rect::new(size.left(), size.bottom() - 1, size.width, 1);
+    let remaining = Rect::new(size.left(), size.top(), size.width, size.height - 1);
+
+    
+    let (shown_input, highlighted) = input_field.render(remaining.width - prompt_text.len() as u16);
+
+    f.render_widget(
+        Paragraph::new(vec![Spans::from(vec![
+            Span::styled(prompt_text, Style::default().add_modifier(Modifier::BOLD)),
+            Span::raw(&shown_input[0..highlighted]),
+            Span::styled(
+                shown_input.chars().nth(highlighted).unwrap().to_string(),
+                Style::default().bg(Color::White).fg(Color::Black),
+            ),
+            Span::raw(&shown_input[highlighted + 1..]),
+        ])])
+        .style(Style::default().bg(Color::Green).fg(Color::Black)),
+        prompt_rect,
+    );
+
+    remaining
 }

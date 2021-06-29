@@ -1,49 +1,15 @@
-use crate::{
-    config::LoadedConfig,
-    template::Template,
-    ui::{self},
-    walkdir,
-};
+use crate::{config::LoadedConfig, template::Template, ui::{self}, userpath::UserDir, walkdir};
 use colored::Colorize;
 use futures::StreamExt;
 use parking_lot::RwLock;
-use std::{collections::HashMap, error::Error, fmt::Debug, path::PathBuf, str::FromStr, sync::Arc};
+use std::{collections::HashMap, path::PathBuf, str::FromStr, sync::Arc};
 
 use read_input::prelude::*;
-
-pub const CMD_STR: &str = "make";
 
 const ERR_PATH: &str = "Cannot understand path.";
 const ERR_NO_EXIST: &str = "Path does not exist.";
 const ERR_NOT_DIR: &str = "Path is not a directory.";
 const ERR_NAME_TAKEN: &str = "There is already a template of that name.";
-
-#[derive(Clone)]
-struct UserPath {
-    path_buf: PathBuf,
-}
-
-impl Debug for UserPath {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        self.path_buf.fmt(f)
-    }
-}
-
-impl FromStr for UserPath {
-    type Err = Box<dyn Error>;
-
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let expanded = shellexpand::full(s)?;
-        let path_buf = PathBuf::from_str(&expanded)?;
-        Ok(UserPath { path_buf })
-    }
-}
-
-impl From<PathBuf> for UserPath {
-    fn from(path_buf: PathBuf) -> Self {
-        UserPath { path_buf }
-    }
-}
 
 struct UserBool {
     value: bool,
@@ -74,7 +40,7 @@ pub fn make(config: &mut LoadedConfig) {
     let current_dir = std::env::current_dir().ok();
 
     let template_dir = {
-        let template_dir_default = current_dir.map(UserPath::from);
+        let template_dir_default = current_dir.map(UserDir::from);
         let prompt = match &template_dir_default {
             Some(default) => format!(
                 "Template directory {}: ",
@@ -90,7 +56,7 @@ pub fn make(config: &mut LoadedConfig) {
                 .add_err_test(|p| p.path_buf.exists(), ERR_NO_EXIST.red())
                 .add_err_test(|p| p.path_buf.is_dir(), ERR_NOT_DIR.red())
                 .get(),
-            None => input::<UserPath>()
+            None => input::<UserDir>()
                 .repeat_msg(prompt)
                 .err(ERR_PATH.red())
                 .add_err_test(|p| p.path_buf.exists(), ERR_NO_EXIST.red())
@@ -154,7 +120,7 @@ pub fn make(config: &mut LoadedConfig) {
         ui::run_ui(&mut ui_state);
 
         if ui_state.aborted {
-            std::process::exit(exitcode::OK);
+            std::process::exit(exitcode::USAGE);
         }
         ui_state.file_list
     };

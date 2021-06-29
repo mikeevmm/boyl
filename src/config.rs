@@ -15,6 +15,30 @@ fn get_json_path(config_path: &Path) -> PathBuf {
     config_path.join("config.json")
 }
 
+/// Gets the default directory for boyl's configuration files,
+/// namely `(default config directory)/boyl`, where the default
+/// configuration directory is given by the `dirs` crate.
+///
+/// As a side effect of this function, **if the default directory
+/// does not exist, it will be created**.
+pub fn default_config_dir() -> PathBuf {
+    let default_dir = dirs::config_dir()
+        .expect("`dirs` crate does not specify a config directory for this OS.")
+        .join("boyl");
+    if !default_dir.exists() {
+        std::fs::create_dir_all(default_dir.clone())
+            .expect("Failed to create the default configuration directory.");
+    }
+    default_dir
+}
+
+pub fn write_config_or_fail(config: &LoadedConfig) {
+    if let Err(err) = config.write_config() {
+        println!("{}", err);
+        std::process::exit(exitcode::IOERR);
+    }
+}
+
 pub type TemplateKey = u64;
 
 /// Configuration elements that persist between sessions;

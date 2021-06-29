@@ -1,45 +1,15 @@
 use crate::{
     config::{Config, LoadedConfig},
-    userpath::user_path_to_path,
+    userpath::UserDir,
     walkdir,
 };
 use colored::Colorize;
 use futures::StreamExt;
-use std::io::ErrorKind;
 
-pub const CMD_STR: &str = "new";
-pub const TEMPLATE_ARG: &str = "TEMPLATE";
-pub const NAME_ARG: &str = "NAME";
-pub const LOCATION_ARG: &str = "LOCATION";
-
-enum LocationErrorKind {
-    NotExists,
-    NotADir,
-    Unknown(Box<dyn std::error::Error>),
-}
-
-fn location_error(kind: LocationErrorKind, location: &str) {
-    println!("{}", "Cannot create new template:".red());
-    match kind {
-        LocationErrorKind::NotExists => {
-            println!("{} does not exist.", location);
-            println!(
-                "{}",
-                "Please note that the provided directory should \
-            be the parent directory to the new template instance."
-                    .dimmed()
-            );
-        }
-        LocationErrorKind::NotADir => {
-            println!("{} is not a directory.", location);
-        }
-        LocationErrorKind::Unknown(err) => {
-            println!("{}", err);
-        }
-    }
-}
-
-pub fn new(config: &LoadedConfig, template: &str, name: Option<&str>, location_str: &str) {
+pub fn new(config: &LoadedConfig, template: &str, name: Option<&str>, location: Option<UserDir>) {
+    let location = location
+        .map(|d| d.path_buf)
+        .unwrap_or_else(|| std::env::current_dir().expect("Could not read current directory."));
     let template_key = Config::get_template_key(template);
     let template = match config.config.templates.get(&template_key) {
         Some(template) => template,
@@ -54,20 +24,6 @@ pub fn new(config: &LoadedConfig, template: &str, name: Option<&str>, location_s
         }
     };
     let name = name.unwrap_or(&template.name);
-    let location = match user_path_to_path(location_str) {
-        Ok(location) => location,
-        Err(err) => {
-            match err.kind() {
-                ErrorKind::NotFound => location_error(LocationErrorKind::NotExists, location_str),
-                _ => location_error(LocationErrorKind::Unknown(Box::new(err)), location_str),
-            };
-            std::process::exit(exitcode::USAGE);
-        }
-    };
-    if !location.is_dir() {
-        location_error(LocationErrorKind::NotADir, location_str);
-        std::process::exit(exitcode::USAGE);
-    }
 
     let target_base_dir = location.join(name);
     if target_base_dir.exists() && target_base_dir.read_dir().unwrap().next().is_some() {

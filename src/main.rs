@@ -53,12 +53,12 @@ struct ListCommand {}
 
 #[derive(FromArgs, PartialEq, Debug)]
 /// Shows the tree structure of a template.
+///
+/// Templates available can be found with `boyl list`.
 #[argh(subcommand, name = "tree")]
 struct TreeCommand {
     #[argh(positional)]
-    /// the project template to examine:
-    ///
-    /// should be one of the template names listed with `list`.
+    /// the project template to examine
     template: String,
 }
 
@@ -69,38 +69,29 @@ struct MakeCommand {}
 
 #[derive(FromArgs, PartialEq, Debug)]
 /// Creates a new project.
+///
+/// Templates available can be found with `boyl list`.
 #[argh(subcommand, name = "new")]
 struct NewCommand {
     #[argh(positional)]
-    /// the project template to use:
-    ///
-    /// use the `list` command to find what templates are available,
-    /// or create a new template with `make`.
+    /// the project template to use
     template: String,
     #[argh(option)]
-    /// the name for the new project:
-    ///
-    /// this will be the name of the created folder.
-    /// By default takes the same name as the template.
+    /// the name for the new project [default: <current dir. name>]
     name: Option<String>,
     #[argh(option, from_str_fn(to_user_path))]
-    /// where to create the new project:
-    ///
-    /// defaults to the current directory. This argument
-    /// specifies the parent directory to the project, as a new
-    /// folder will be created for the project.
+    /// where to create the new project [default: <current dir.>]
     location: Option<userpath::UserDir>,
 }
 
 #[derive(FromArgs, PartialEq, Debug)]
 /// Delete an existing template.
+///
+/// Templates available can be found with `boyl list`.
 #[argh(subcommand, name = "delete")]
 struct DeleteCommand {
     #[argh(positional)]
-    /// the template to delete:
-    ///
-    /// use the `list` command to find what templates exist.
-    /// Deletion is irreversible.
+    /// the template to delete
     template: String,
 }
 
@@ -110,7 +101,7 @@ struct DeleteCommand {
 struct VersionCommand {}
 
 #[derive(FromArgs, PartialEq, Debug)]
-///
+/// Hugs & kisses
 #[argh(subcommand, name = "xoxo")]
 struct XoxoCommand {}
 

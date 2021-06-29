@@ -25,7 +25,7 @@ mod userpath;
 mod userbool;
 mod walkdir;
 
-const VERSION: &str = "0.1.0";
+const VERSION: &str = env!("CARGO_PKG_VERSION");
 
 #[derive(FromArgs)]
 /// Quickly create boilerplate projects and templates.

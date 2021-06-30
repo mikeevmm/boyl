@@ -85,15 +85,9 @@ struct NewCommand {
 }
 
 #[derive(FromArgs, PartialEq, Debug)]
-/// Remove and modify existing templates.
-///
-/// Available templates can be found with `boyl list`.
+/// Interactively remove and modify existing templates.
 #[argh(subcommand, name = "edit")]
-struct EditCommand {
-    #[argh(positional)]
-    /// the template to delete
-    template: String,
-}
+struct EditCommand {}
 
 #[derive(FromArgs, PartialEq, Debug)]
 /// Print the current version.
@@ -138,7 +132,7 @@ fn main() {
         Command::New(new) => {
             cmd::new::new(&config, &new.template, new.name.as_deref(), new.location)
         }
-        Command::Edit(delete) => {
+        Command::Edit(_) => {
             cmd::edit::edit(&mut config);
             config::write_config_or_fail(&config);
         }

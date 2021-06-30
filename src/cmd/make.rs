@@ -34,15 +34,11 @@ pub fn make(config: &mut LoadedConfig) {
             Some(default) => input()
                 .repeat_msg(prompt)
                 .default(default)
-                .err(ERR_PATH.red())
-                .add_err_test(|p| p.path_buf.exists(), ERR_NO_EXIST.red())
-                .add_err_test(|p| p.path_buf.is_dir(), ERR_NOT_DIR.red())
+                .err_match(|err| Some(err.to_string().red().to_string()))
                 .get(),
             None => input::<UserDir>()
                 .repeat_msg(prompt)
-                .err(ERR_PATH.red())
-                .add_err_test(|p| p.path_buf.exists(), ERR_NO_EXIST.red())
-                .add_err_test(|p| p.path_buf.is_dir(), ERR_NOT_DIR.red())
+                .err_match(|err| Some(err.to_string().red().to_string()))
                 .get(),
         }
     };

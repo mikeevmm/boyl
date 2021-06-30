@@ -15,6 +15,7 @@ pub mod input;
 pub mod layout;
 pub mod spinner;
 pub mod help;
+pub mod list;
 
 pub enum UiStateReaction {
     Exit,

@@ -21,8 +21,8 @@ mod config;
 mod copy;
 mod template;
 mod ui;
-mod userpath;
 mod userbool;
+mod userpath;
 mod walkdir;
 
 const VERSION: &str = env!("CARGO_PKG_VERSION");
@@ -41,7 +41,7 @@ enum Command {
     Tree(TreeCommand),
     Make(MakeCommand),
     New(NewCommand),
-    Delete(DeleteCommand),
+    Edit(EditCommand),
     Xoxo(XoxoCommand),
     Version(VersionCommand),
 }
@@ -54,7 +54,7 @@ struct ListCommand {}
 #[derive(FromArgs, PartialEq, Debug)]
 /// Shows the tree structure of a template.
 ///
-/// Templates available can be found with `boyl list`.
+/// Available templates can be found with `boyl list`.
 #[argh(subcommand, name = "tree")]
 struct TreeCommand {
     #[argh(positional)]
@@ -70,26 +70,26 @@ struct MakeCommand {}
 #[derive(FromArgs, PartialEq, Debug)]
 /// Creates a new project.
 ///
-/// Templates available can be found with `boyl list`.
+/// Available templates can be found with `boyl list`.
 #[argh(subcommand, name = "new")]
 struct NewCommand {
     #[argh(positional)]
     /// the project template to use
     template: String,
-    #[argh(option)]
+    #[argh(option, short = 'n')]
     /// the name for the new project [default: <current dir. name>]
     name: Option<String>,
-    #[argh(option, from_str_fn(to_user_path))]
+    #[argh(option, short = 'l', from_str_fn(to_user_path))]
     /// where to create the new project [default: <current dir.>]
     location: Option<userpath::UserDir>,
 }
 
 #[derive(FromArgs, PartialEq, Debug)]
-/// Delete an existing template.
+/// Remove and modify existing templates.
 ///
-/// Templates available can be found with `boyl list`.
-#[argh(subcommand, name = "delete")]
-struct DeleteCommand {
+/// Available templates can be found with `boyl list`.
+#[argh(subcommand, name = "edit")]
+struct EditCommand {
     #[argh(positional)]
     /// the template to delete
     template: String,
@@ -138,8 +138,8 @@ fn main() {
         Command::New(new) => {
             cmd::new::new(&config, &new.template, new.name.as_deref(), new.location)
         }
-        Command::Delete(delete) => {
-            cmd::delete::delete(&mut config, &delete.template);
+        Command::Edit(delete) => {
+            cmd::edit::edit(&mut config);
             config::write_config_or_fail(&config);
         }
         Command::Xoxo(_) => cmd::xoxo::xoxo(),

@@ -199,6 +199,5 @@ pub fn make(config: &mut LoadedConfig) {
     config
         .config
         .templates
-        .insert(new_template_key, new_template)
-        .unwrap();
+        .insert(new_template_key, new_template);
 }

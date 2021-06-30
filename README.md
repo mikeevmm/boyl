@@ -6,6 +6,12 @@
 a persistent location, and provides an interface to instantiate new copies of
 these templates, list the available templates, and remove templates.
 
+[🔗 Installation](#installation)
+[🔗 FAQ](#faq)
+[🔗 Contributing](#contributing)
+[🔗 Support](#support)
+[🔗 License](#license)
+
 ## Installation
 
 You can find pre-built binaries in the [releases][releases] page.
@@ -86,3 +92,31 @@ I do not endorse this approach, frankly.
 
 [0]: https://github.com/mikeevmm/template
 [1]: https://xkcd.com/353/
+
+## Contributing
+
+Pull requests are welcome, and preferred to issues. I cannot guarantee that I
+will be able to address issues. Please be polite.
+
+## License
+
+`boyl` is licensed under a GNU General Public License v2. This [informally means
+that][tldr]:
+
+    You may copy, distribute and modify the software as long as you track
+    changes/dates in source files. Any modifications to or software including
+    (via compiler) GPL-licensed code must also be made available under the GPL
+    along with build & install instructions.
+
+See LICENSE for the full text.
+
+[tldr]: https://tldrlegal.com/license/gnu-general-public-license-v2#summary
+
+## Support
+
+Getting donations, no matter how small, let me know that people use and 
+appreciate the software I've put out. (Enough so to pay for it.)
+
+If you like `boyl`, consider [buying me a coffee][coffee].
+
+[coffee]: https://www.paypal.me/miguelmurca/2.50

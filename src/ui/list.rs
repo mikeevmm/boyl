@@ -23,7 +23,7 @@ where
     T: ListElement<'t>,
 {
     phantom: PhantomData<&'t T>,
-    highlight: usize,
+    pub highlight: usize,
     buffer_start: usize,
     elements: Vec<T>,
 }
@@ -41,7 +41,7 @@ where
         }
     }
 
-    fn len(&self) -> usize {
+    pub fn len(&self) -> usize {
         self.elements.len()
     }
 
@@ -61,7 +61,18 @@ where
         };
     }
 
+    pub fn remove_entry(&mut self, entry: usize) {
+        self.elements.remove(entry);
+        if entry <= self.highlight {
+            self.highlight = self.highlight.saturating_sub(1);
+        }
+    }
+
     pub fn draw(&mut self, f: &mut tui::Frame<impl Backend>, size: Rect) {
+        if self.len() == 0 {
+            return;
+        }
+        
         if self.highlight < self.buffer_start {
             self.buffer_start = self.highlight;
         } else if self.highlight > (self.buffer_start + size.height as usize).saturating_sub(1) {

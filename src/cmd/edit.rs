@@ -1,6 +1,7 @@
 use crate::{
     config::{LoadedConfig, TemplateKey},
-    ui::{self, layout::VisualBox, list::List, UiState, UiStateReaction},
+    template::Template,
+    ui::{self, input::InputField, layout::VisualBox, list::List, UiState, UiStateReaction},
 };
 use termion::event::Key;
 use tui::{
@@ -15,13 +16,14 @@ enum EditUiMode {
     List,
     Delete(TemplateKey, String),
     Error(String),
-    Rename,
+    Rename(TemplateKey),
 }
 
 struct EditUi<'conf> {
     config: &'conf mut LoadedConfig,
     mode: EditUiMode,
     list: List<'conf, Spans<'conf>>,
+    input: InputField,
 }
 
 impl<'conf> EditUi<'conf> {
@@ -31,7 +33,24 @@ impl<'conf> EditUi<'conf> {
             config,
             mode: EditUiMode::List,
             list,
+            input: InputField::new(),
         }
+    }
+
+    /// Computes a single `Spans`, corresponding to one entry on the list for a `Template`.
+    fn make_template_entry(template: &Template) -> Spans<'static> {
+        Spans::from(vec![
+            Span::raw(template.name.clone()),
+            Span::raw(" "),
+            Span::styled(
+                template
+                    .description
+                    .as_deref()
+                    .unwrap_or("(No description.)")
+                    .to_string(),
+                Style::default().fg(Color::Gray),
+            ),
+        ])
     }
 
     /// Computes the `Spans` to display the existing templates in a list.
@@ -44,19 +63,7 @@ impl<'conf> EditUi<'conf> {
             .config
             .templates
             .values()
-            .map(|t| {
-                Spans::from(vec![
-                    Span::raw(t.name.clone()),
-                    Span::raw(" "),
-                    Span::styled(
-                        t.description
-                            .as_deref()
-                            .unwrap_or("(No description.)")
-                            .to_string(),
-                        Style::default().fg(Color::Gray),
-                    ),
-                ])
-            })
+            .map(Self::make_template_entry)
             .collect::<Vec<Spans>>()
     }
 
@@ -86,7 +93,15 @@ impl<'conf> EditUi<'conf> {
             }
             Key::Char('e') => {
                 if self.list.len() > 0 {
-                    todo!()
+                    let rename_key = *self
+                        .config
+                        .config
+                        .templates
+                        .keys()
+                        .nth(self.list.highlight)
+                        .unwrap();
+                    self.input = InputField::new();
+                    self.mode = EditUiMode::Rename(rename_key);
                 }
             }
             _ => {}
@@ -127,6 +142,36 @@ impl<'conf> EditUi<'conf> {
             _ => self.mode = EditUiMode::List,
         }
 
+        None
+    }
+
+    fn rename_input(
+        &mut self,
+        key: Key,
+        template_key: &TemplateKey,
+    ) -> Option<crate::ui::UiStateReaction> {
+        match key {
+            Key::Left => self.input.caret_move_left(),
+            Key::Right => self.input.caret_move_right(),
+            Key::Backspace => self.input.backspace_char(),
+            Key::Char('\n') | Key::Char('\r') => {
+                let new_description = {
+                    let new_description = self.input.consume_input();
+                    if new_description.trim().is_empty() {
+                        None
+                    } else {
+                        Some(new_description)
+                    }
+                };
+                let template = self.config.config.templates.get_mut(template_key).unwrap();
+                template.description = new_description;
+                self.list
+                    .replace_entry(self.list.highlight, Self::make_template_entry(&template));
+                self.mode = EditUiMode::List;
+            }
+            Key::Char(c) => self.input.add_char(c),
+            _ => {}
+        }
         None
     }
 
@@ -176,6 +221,16 @@ impl<'conf> EditUi<'conf> {
 
         remaining
     }
+
+    fn draw_prompt(&mut self, f: &mut tui::Frame<impl Backend>) -> Rect {
+        let size = f.size();
+        let prompt_text = if size.width > 45 {
+            "New description: "
+        } else {
+            ":"
+        };
+        ui::input::draw_input(f, size, &mut self.input, prompt_text)
+    }
 }
 
 impl<'conf, B: Backend> UiState<B> for EditUi<'conf> {
@@ -187,7 +242,7 @@ impl<'conf, B: Backend> UiState<B> for EditUi<'conf> {
         match self.mode {
             EditUiMode::List => self.list_input(key),
             EditUiMode::Delete(template_key, _) => self.delete_input(key, &template_key.clone()),
-            EditUiMode::Rename => todo!(),
+            EditUiMode::Rename(template_key) => self.rename_input(key, &template_key),
             EditUiMode::Error(_) => {
                 self.mode = EditUiMode::List;
                 None
@@ -203,7 +258,7 @@ impl<'conf, B: Backend> UiState<B> for EditUi<'conf> {
         let remaining = match &self.mode {
             EditUiMode::List => self.draw_help(f),
             EditUiMode::Delete(_key, name) => self.draw_delete(f, name),
-            EditUiMode::Rename => todo!(),
+            EditUiMode::Rename(_) => self.draw_prompt(f),
             EditUiMode::Error(err_message) => self.draw_error(f, err_message),
         };
         let block = Block::default().borders(Borders::ALL).title("Templates:");

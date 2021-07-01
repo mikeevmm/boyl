@@ -68,6 +68,10 @@ where
         }
     }
 
+    pub fn replace_entry(&mut self, at: usize, value: T) {
+        self.elements[at] = value;
+    }
+
     pub fn draw(&mut self, f: &mut tui::Frame<impl Backend>, size: Rect) {
         if self.len() == 0 {
             return;

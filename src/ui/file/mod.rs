@@ -3,7 +3,10 @@ use super::{
     help,
     input::{self, InputField},
 };
-use crate::ui::{layout::VisualBox, UiState, UiStateReaction};
+use crate::ui::{
+    layout::{self, VisualBox},
+    UiState, UiStateReaction,
+};
 use std::{cmp::min, path::Path};
 use termion::event::Key;
 use tui::{
@@ -87,8 +90,8 @@ impl<'path> FilePickerUi<'path> {
 
     fn draw_error(&self, f: &mut tui::Frame<impl Backend>, message: &'_ str) -> Rect {
         let size = f.size();
-        let newlines = message.lines().count() as u16;
-        let height = min(size.height, newlines);
+        let (message, newlines) = layout::distribute_text(message, size.width);
+        let height = std::cmp::min(size.height, newlines as u16);
         let paragraph_rect = Rect::new(size.left(), size.bottom() - height, size.width, height);
         let remaining = Rect::new(size.left(), size.top(), size.width, size.height - height);
 

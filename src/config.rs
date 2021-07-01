@@ -170,6 +170,11 @@ impl Display for WriteConfigError {
     }
 }
 
+pub enum DeleteTemplateError<'key> {
+    NoTemplate(&'key TemplateKey),
+    IoErr(std::io::Error),
+}
+
 /// Struct coupling the serializable, in-memory representation of the
 /// program's configuration `Config`, with information about its file
 /// representation.
@@ -217,5 +222,22 @@ impl LoadedConfig {
         let writer = BufWriter::new(json_file);
         serde_json::to_writer(writer, &self.config)
             .map_err(|e| WriteConfigError::BadSerialization(e, json_path.display().to_string()))
+    }
+
+    /// Deltes a template from the `Config` in memory, removing the corresponding saved
+    /// directory in the templates directory.
+    pub fn delete_template<'key>(
+        &mut self,
+        key: &'key TemplateKey,
+    ) -> Result<(), DeleteTemplateError<'key>> {
+        if !self.config.templates.contains_key(key) {
+            Err(DeleteTemplateError::NoTemplate(key))
+        } else if let Err(err) =
+            std::fs::remove_dir_all(self.config.templates.remove(key).unwrap().path)
+        {
+            Err(DeleteTemplateError::IoErr(err))
+        } else {
+            Ok(())
+        }
     }
 }

@@ -13,9 +13,6 @@ use std::{collections::HashMap, path::PathBuf, sync::Arc};
 
 use read_input::prelude::*;
 
-const ERR_PATH: &str = "Cannot understand path.";
-const ERR_NO_EXIST: &str = "Path does not exist.";
-const ERR_NOT_DIR: &str = "Path is not a directory.";
 const ERR_NAME_TAKEN: &str = "There is already a template of that name.";
 
 pub fn make(config: &mut LoadedConfig) {
@@ -104,43 +101,47 @@ pub fn make(config: &mut LoadedConfig) {
     };
 
     // We now copy the files to the templates directory, and store a new template in memory.
-    // Copying is done on a Tokio runtime, to make use of all threads without manual thread
-    // management.
     let target_base_dir = config.get_template_dir().join(&template_name);
-    if let Err(err) = std::fs::create_dir(&target_base_dir) {
-        match err.kind() {
-            std::io::ErrorKind::AlreadyExists => {
-                println!(
-                    "The template base directory already exists.\n\
-                This may be because you previously aborted the creation of a template of \
-                the same name."
-                );
-                let erase_and_continue = input::<UserBool>()
-                    .repeat_msg(format!(
-                        "Do you wish to delete the existing directory and continue? {} ",
-                        "[y/N]".dimmed()
-                    ))
-                    .default(false.into())
-                    .get();
 
-                match erase_and_continue.value {
-                    true => {
-                        std::fs::remove_dir_all(&target_base_dir)
-                            .expect("Could not remove the existing directory.");
-                        std::fs::create_dir(&target_base_dir)
-                            .expect("Could not create template directory.");
-                    }
-                    false => {
-                        println!("Aborting.");
-                        std::process::exit(exitcode::CONFIG);
-                    }
-                }
+    if target_base_dir.exists() {
+        println!(
+            "{}",
+            "The template base directory already exists.\n\
+        This may be because you previously aborted the creation of a template of \
+        the same name."
+                .red()
+        );
+        let erase_and_continue = input::<UserBool>()
+            .repeat_msg(
+                format!(
+                    "Do you wish to delete the existing directory and continue? {} ",
+                    "[y/N]".dimmed()
+                )
+                .yellow(),
+            )
+            .default(false.into())
+            .get();
+
+        match erase_and_continue.value {
+            true => {
+                std::fs::remove_dir_all(&target_base_dir)
+                    .expect("Could not remove the existing directory.");
+                std::fs::create_dir(&target_base_dir)
+                    .expect("Could not create template directory.");
             }
-            _ => panic!(
-                "Could not create the template base directory, with error: {}",
-                err
-            ),
+            false => {
+                println!("Aborting.");
+                std::process::exit(exitcode::CONFIG);
+            }
         }
+    }
+
+    if let Err(err) = std::fs::create_dir(&target_base_dir) {
+        println!(
+            "Could not create the template base directory, with error: {}",
+            err
+        );
+        std::process::exit(exitcode::IOERR);
     }
 
     let tokio_runtime = tokio::runtime::Builder::new_multi_thread().build().unwrap();

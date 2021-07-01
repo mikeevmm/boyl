@@ -7,6 +7,7 @@ a persistent location, and provides an interface to instantiate new copies of
 these templates, list the available templates, and remove templates.
 
 [🔗 Installation](#installation)
+[🔗 Is it any good?](#is-it-any-good)
 [🔗 FAQ](#faq)
 [🔗 Contributing](#contributing)
 [🔗 Support](#support)
@@ -23,6 +24,10 @@ cargo install --git https://github.com/mikeevmm/boyl
 ```
 
 [releases]: https://github.com/mikeevmm/boyl/releases
+
+## Is it any good?
+
+[Yes:](https://news.ycombinator.com/item?id=3067434)
 
 ## FAQ
 
@@ -85,10 +90,6 @@ specific vision for what I want the tool to do and behave. So, instead of
 finding and learning how to use tool X, I just try my hand at doing it.
 
 I do not endorse this approach, frankly.
-
-### Is it any good?
-
-[Yes.](https://news.ycombinator.com/item?id=3067434)
 
 [0]: https://github.com/mikeevmm/template
 [1]: https://xkcd.com/353/

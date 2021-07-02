@@ -75,7 +75,7 @@ impl<'conf> EditUi<'conf> {
             Key::Down | Key::Char('j') => {
                 self.list.go_down();
             }
-            Key::Ctrl('c') | Key::Char('q') => {
+            Key::Ctrl('c') | Key::Char('q') | Key::Char('\n') | Key::Char('\r') => {
                 return Some(UiStateReaction::Exit);
             }
             Key::Char('x') => {
@@ -100,7 +100,19 @@ impl<'conf> EditUi<'conf> {
                         .keys()
                         .nth(self.list.highlight)
                         .unwrap();
-                    self.input = InputField::new();
+                    let current_description = self
+                        .config
+                        .config
+                        .templates
+                        .get(&rename_key)
+                        .unwrap()
+                        .description
+                        .clone();
+                    self.input = if let Some(description) = current_description {
+                        InputField::new_with_content(description)
+                    } else {
+                        InputField::new()
+                    };
                     self.mode = EditUiMode::Rename(rename_key);
                 }
             }
@@ -154,6 +166,9 @@ impl<'conf> EditUi<'conf> {
             Key::Left => self.input.caret_move_left(),
             Key::Right => self.input.caret_move_right(),
             Key::Backspace => self.input.backspace_char(),
+            Key::Ctrl('c') => {
+                self.mode = EditUiMode::List;
+            }
             Key::Char('\n') | Key::Char('\r') => {
                 let new_description = {
                     let new_description = self.input.consume_input();
@@ -185,7 +200,7 @@ impl<'conf> EditUi<'conf> {
                 ui::help::make_help_box("E", "Edit description"),
             ]);
         }
-        helps.push(ui::help::make_help_box("Q", "Exit"));
+        helps.push(ui::help::make_help_box("Enter/Q", "Exit"));
         let (help_texts, help_boxes): (Vec<String>, Vec<VisualBox>) = helps.into_iter().unzip();
         ui::help::draw_help(help_texts, help_boxes, f, f.size())
     }

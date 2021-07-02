@@ -67,7 +67,7 @@ impl<'path> FilePickerUi<'path> {
             super::help::make_help_box("X", "Exclude/Include file"),
             super::help::make_help_box("Z", "Exclude pattern"),
             super::help::make_help_box("R", "Reset"),
-            super::help::make_help_box("Enter/Q", "Finish"),
+            super::help::make_help_box("Enter", "Finish"),
         ]
         .into_iter()
         .unzip();
@@ -142,7 +142,7 @@ where
                         Key::Char('z') => {
                             self.mode = UiMode::Input(InputMode::IgnorePattern, InputField::new());
                         }
-                        Key::Char('\n') | Key::Char('\r') | Key::Char('q') => {
+                        Key::Char('\n') | Key::Char('\r') => {
                             return Some(UiStateReaction::Exit);
                         }
                         _ => {}

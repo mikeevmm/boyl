@@ -75,7 +75,7 @@ impl<'conf> EditUi<'conf> {
             Key::Down | Key::Char('j') => {
                 self.list.go_down();
             }
-            Key::Ctrl('c') | Key::Char('q') => {
+            Key::Ctrl('c') | Key::Char('q') | Key::Char('\n') | Key::Char('\r') => {
                 return Some(UiStateReaction::Exit);
             }
             Key::Char('x') => {
@@ -200,7 +200,7 @@ impl<'conf> EditUi<'conf> {
                 ui::help::make_help_box("E", "Edit description"),
             ]);
         }
-        helps.push(ui::help::make_help_box("Q", "Exit"));
+        helps.push(ui::help::make_help_box("Enter/Q", "Exit"));
         let (help_texts, help_boxes): (Vec<String>, Vec<VisualBox>) = helps.into_iter().unzip();
         ui::help::draw_help(help_texts, help_boxes, f, f.size())
     }

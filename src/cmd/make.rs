@@ -20,6 +20,11 @@ pub fn make(
     template_dir: PathBuf,
     template_description: Option<String>,
 ) {
+    if config.config.templates.contains_key(&Config::get_template_key(&template_name)) {
+        println!("{}", ERR_NAME_TAKEN.red());
+        std::process::exit(exitcode::USAGE);
+    }
+
     let file_list = {
         let mut ui_state = crate::ui::file::FilePickerUi::new(&template_dir);
         ui::run_ui(&mut ui_state);
@@ -81,7 +86,6 @@ pub fn make(
         let files_list = Arc::new(file_list);
         let files_memo = Arc::new(RwLock::new(HashMap::<PathBuf, bool>::new()));
         async move {
-            // files_list.is_included_memoized_async(&f.path(), files_memo.clone());
             let files_to_include = Box::pin(walkdir::visit(&base_path).filter_map({
                 clone_move!(files_list);
                 clone_move!(files_memo);

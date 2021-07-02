@@ -1,6 +1,12 @@
 use std::cmp::min;
 
-use tui::{backend::Backend, layout::Rect, style::{Color, Modifier, Style}, text::{Span, Spans}, widgets::Paragraph};
+use tui::{
+    backend::Backend,
+    layout::Rect,
+    style::{Color, Modifier, Style},
+    text::{Span, Spans},
+    widgets::Paragraph,
+};
 
 /// A single-line input field, with a caret.
 ///
@@ -15,11 +21,14 @@ pub struct InputField {
 
 impl InputField {
     pub fn new() -> Self {
-        let mut input_buffer = String::with_capacity(80);
-        input_buffer.push(' ');
+        Self::new_with_content(String::with_capacity(80))
+    }
+
+    pub fn new_with_content(mut content: String) -> Self {
+        content.push(' ');
 
         InputField {
-            input_buffer,
+            input_buffer: content,
             caret_position: 0,
             buffer_start: 0,
         }
@@ -89,7 +98,6 @@ pub fn draw_input(
     let prompt_rect = Rect::new(size.left(), size.bottom() - 1, size.width, 1);
     let remaining = Rect::new(size.left(), size.top(), size.width, size.height - 1);
 
-    
     let (shown_input, highlighted) = input_field.render(remaining.width - prompt_text.len() as u16);
 
     f.render_widget(

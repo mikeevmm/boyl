@@ -100,7 +100,19 @@ impl<'conf> EditUi<'conf> {
                         .keys()
                         .nth(self.list.highlight)
                         .unwrap();
-                    self.input = InputField::new();
+                    let current_description = self
+                        .config
+                        .config
+                        .templates
+                        .get(&rename_key)
+                        .unwrap()
+                        .description
+                        .clone();
+                    self.input = if let Some(description) = current_description {
+                        InputField::new_with_content(description)
+                    } else {
+                        InputField::new()
+                    };
                     self.mode = EditUiMode::Rename(rename_key);
                 }
             }
@@ -154,6 +166,9 @@ impl<'conf> EditUi<'conf> {
             Key::Left => self.input.caret_move_left(),
             Key::Right => self.input.caret_move_right(),
             Key::Backspace => self.input.backspace_char(),
+            Key::Ctrl('c') => {
+                self.mode = EditUiMode::List;
+            }
             Key::Char('\n') | Key::Char('\r') => {
                 let new_description = {
                     let new_description = self.input.consume_input();

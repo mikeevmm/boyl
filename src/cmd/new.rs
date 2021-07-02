@@ -50,7 +50,7 @@ pub fn new(config: &LoadedConfig, template: &str, name: Option<&str>, location: 
     });
 
     println!(
-        "{} {} {} {}",
+        "{} {} {} {}.",
         "Created new template".green(),
         template.name,
         "in".green(),

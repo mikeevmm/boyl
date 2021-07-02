@@ -1,8 +1,9 @@
+/// From Shepmaster's answer on [StackOverflow:56717139][0]
+///
+/// Modified as needed.
+///
+/// [0]: https://stackoverflow.com/a/58825638
 use futures::StreamExt; // 0.3.1
-/**
-*   From Shepmaster's answer on StackOverflow:56717139
-*   https://stackoverflow.com/a/58825638
-*/
 use futures::{stream, Stream};
 use std::{io, path::PathBuf};
 use tokio::fs::{self, DirEntry}; // 0.2.4
@@ -17,9 +18,9 @@ pub fn visit(
         while let Some(child) = dir.next_entry().await? {
             if child.metadata().await?.is_dir() {
                 to_visit.push(child.path());
-            } else {
-                files.push(child)
             }
+            // We also want to copy directories, even if they are empty.
+            files.push(child)
         }
 
         Ok(files)

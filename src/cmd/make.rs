@@ -3,7 +3,6 @@ use crate::{
     config::{Config, LoadedConfig},
     template::Template,
     ui::{self},
-    userpath::UserDir,
     walkdir,
 };
 use colored::Colorize;
@@ -15,83 +14,14 @@ use read_input::prelude::*;
 
 const ERR_NAME_TAKEN: &str = "There is already a template of that name.";
 
-pub fn make(config: &mut LoadedConfig) {
-    let current_dir = std::env::current_dir().ok();
-
-    let template_dir = {
-        let template_dir_default = current_dir.map(UserDir::from);
-        let prompt = match &template_dir_default {
-            Some(default) => format!(
-                "Template directory {}: ",
-                format!("[default: {}]", default.path_buf.to_string_lossy()).dimmed()
-            ),
-            None => "Template directory: ".to_string(),
-        };
-        match template_dir_default {
-            Some(default) => input()
-                .repeat_msg(prompt)
-                .default(default)
-                .err_match(|err| Some(err.to_string().red().to_string()))
-                .get(),
-            None => input::<UserDir>()
-                .repeat_msg(prompt)
-                .err_match(|err| Some(err.to_string().red().to_string()))
-                .get(),
-        }
-    };
-
-    let template_name = {
-        let template_name_default = template_dir
-            .path_buf
-            .file_name()
-            .map(|s| s.to_string_lossy().to_string());
-        let prompt = match &template_name_default {
-            Some(default) => format!(
-                "Template name {}: ",
-                format!("[default: {}]", default).dimmed()
-            ),
-            None => "Template name: ".to_string(),
-        };
-        let mut answer;
-        loop {
-            answer = match template_name_default.clone() {
-                Some(default) => input().msg(prompt.clone()).default(default).get(),
-                None => input::<String>().msg(prompt.clone()).get(),
-            };
-
-            // A bit hacky: `rprompt` validation funcitons require 'static lifetime,
-            // which cannot be satisfied for this check.
-            if config
-                .config
-                .templates
-                .values()
-                .map(|t| &t.name)
-                .any(|n| *n == answer)
-            {
-                println!("{}", ERR_NAME_TAKEN.red());
-            } else {
-                break;
-            }
-        }
-        answer
-    };
-
-    let template_description = {
-        let user = input::<String>()
-            .msg(format!(
-                "Template description {}: ",
-                "(Leave empty for none)".dimmed()
-            ))
-            .get();
-        if user.is_empty() {
-            None
-        } else {
-            Some(user)
-        }
-    };
-
+pub fn make(
+    config: &mut LoadedConfig,
+    template_name: String,
+    template_dir: PathBuf,
+    template_description: Option<String>,
+) {
     let file_list = {
-        let mut ui_state = crate::ui::file::FilePickerUi::new(&template_dir.path_buf);
+        let mut ui_state = crate::ui::file::FilePickerUi::new(&template_dir);
         ui::run_ui(&mut ui_state);
 
         if ui_state.aborted {
@@ -146,7 +76,7 @@ pub fn make(config: &mut LoadedConfig) {
 
     let tokio_runtime = tokio::runtime::Builder::new_multi_thread().build().unwrap();
     tokio_runtime.block_on({
-        let base_path = template_dir.path_buf.clone();
+        let base_path = template_dir.clone();
         let target_path = target_base_dir.clone();
         let files_list = Arc::new(file_list);
         let files_memo = Arc::new(RwLock::new(HashMap::<PathBuf, bool>::new()));

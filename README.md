@@ -17,11 +17,28 @@ these templates, list the available templates, and remove templates.
 
 You can find pre-built binaries in the [releases][releases] page.
 
+To make `boyl` accessible from the command, download one of the releases to a
+known place (for example, `~/boyl/boyl-0.1.0`), and either add that directory
+to your `$PATH`, or create a link to the executable in a directory that is
+already in your `$PATH` (for example, `~/bin`):
+
+```bash
+ln -s "$HOME/boyl/boyl-0.1.0" "$HOME/bin/boyl"
+```
+
+You can confirm that `boyl` is available by running
+
+```bash
+boyl --help
+```
+
 If you wish to build `boyl` from source, you can do so with `cargo`:
 
-```
+```bash
 cargo install --git https://github.com/mikeevmm/boyl
 ```
+
+This will make `boyl` available from the command-line immediately.
 
 [releases]: https://github.com/mikeevmm/boyl/releases
 

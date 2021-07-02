@@ -2,7 +2,8 @@ use colored::Colorize;
 
 pub fn xoxo() {
     println!(
-        "Hi, I'm Miguel, and I made Boyl.
+        "\
+Hi, I'm Miguel, and I made Boyl.
 Boyl is free and open source, but if you like and/or use Boyl often,
 please consider [{}] if you can.
 Otherwise, feel free to say hi to me on:

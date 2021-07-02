@@ -3,7 +3,6 @@ extern crate serde;
 
 use argh::FromArgs;
 use colored::Colorize;
-use userpath::to_user_path;
 
 use crate::config::default_config_dir;
 
@@ -65,7 +64,22 @@ struct TreeCommand {
 #[derive(FromArgs, PartialEq, Debug)]
 /// Interactively generates a new template.
 #[argh(subcommand, name = "make")]
-struct MakeCommand {}
+struct MakeCommand {
+    #[argh(positional, short = 'n')]
+    /// the name of the new template
+    name: String,
+    #[argh(option, short = 'l', default = "None", from_str_fn(to_some_user_path))]
+    /// what directory to copy as a template [default: <current dir.>]
+    location: Option<userpath::UserDir>,
+    #[argh(option)]
+    /// description of the template [default: None]
+    description: Option<String>,
+}
+
+/// Wrapper around `userpath::to_user_path` to use with `argh`.
+fn to_some_user_path(path: &str) -> Result<Option<userpath::UserDir>, String> {
+    userpath::to_user_path(path).map(Some)
+}
 
 #[derive(FromArgs, PartialEq, Debug)]
 /// Creates a new project.
@@ -79,7 +93,7 @@ struct NewCommand {
     #[argh(option, short = 'n')]
     /// the name for the new project [default: <current dir. name>]
     name: Option<String>,
-    #[argh(option, short = 'l', from_str_fn(to_user_path))]
+    #[argh(option, short = 'l')]
     /// where to create the new project [default: <current dir.>]
     location: Option<userpath::UserDir>,
 }
@@ -95,7 +109,7 @@ struct EditCommand {}
 struct VersionCommand {}
 
 #[derive(FromArgs, PartialEq, Debug)]
-/// Hugs & kisses
+/// Hello!
 #[argh(subcommand, name = "xoxo")]
 struct XoxoCommand {}
 
@@ -104,7 +118,7 @@ fn main() {
 
     let config_path = std::env::var("BOYL_CONFIG").map_or_else(
         |_| default_config_dir(),
-        |path| match to_user_path(&path) {
+        |path| match userpath::to_user_path(&path) {
             Ok(path) => path.path_buf,
             Err(msg) => {
                 println!("{}", msg);
@@ -125,8 +139,15 @@ fn main() {
     match command.command {
         Command::List(_) => cmd::list::list(&config),
         Command::Tree(tree) => cmd::tree::tree(&config, &tree.template),
-        Command::Make(_) => {
-            cmd::make::make(&mut config);
+        Command::Make(make) => {
+            cmd::make::make(
+                &mut config,
+                make.name,
+                make.location.map(|d| d.path_buf).unwrap_or_else(|| {
+                    std::env::current_dir().expect("Could not determine current directory.")
+                }),
+                make.description,
+            );
             config::write_config_or_fail(&config);
         }
         Command::New(new) => {

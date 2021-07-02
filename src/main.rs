@@ -74,6 +74,9 @@ struct MakeCommand {
     #[argh(option)]
     /// description of the template [default: None]
     description: Option<String>,
+    #[argh(switch)]
+    /// include all files from `location` without asking
+    all: bool,
 }
 
 /// Wrapper around `userpath::to_user_path` to use with `argh`.
@@ -147,6 +150,7 @@ fn main() {
                     std::env::current_dir().expect("Could not determine current directory.")
                 }),
                 make.description,
+                make.all,
             );
             config::write_config_or_fail(&config);
         }

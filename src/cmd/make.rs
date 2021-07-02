@@ -19,6 +19,7 @@ pub fn make(
     template_name: String,
     template_dir: PathBuf,
     template_description: Option<String>,
+    all: bool,
 ) {
     if config.config.templates.contains_key(&Config::get_template_key(&template_name)) {
         println!("{}", ERR_NAME_TAKEN.red());
@@ -27,7 +28,9 @@ pub fn make(
 
     let file_list = {
         let mut ui_state = crate::ui::file::FilePickerUi::new(&template_dir);
-        ui::run_ui(&mut ui_state);
+        if !all {
+            ui::run_ui(&mut ui_state);
+        }
 
         if ui_state.aborted {
             std::process::exit(exitcode::USAGE);

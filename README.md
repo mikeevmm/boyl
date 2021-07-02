@@ -3,7 +3,7 @@
 `boyl` is a command line tool written in Rust to manage template folders.
 
 `boyl` can copy existing folders (with support for glob-like ignore patterns) to
-a persistent location, and provides an interface to instantiate new copies of
+a persistent location, and provides an terminal UI to instantiate new copies of
 these templates, list the available templates, and remove templates.
 
 [🔗 Installation](#installation)
@@ -134,9 +134,9 @@ See LICENSE for the full text.
 
 ## Support
 
-Getting donations, no matter how small, let me know that people use and 
+Getting donations, no matter how small, lets me know that people use and 
 appreciate the software I've put out. (Enough so to pay for it.)
 
-If you like `boyl`, consider [buying me a coffee][coffee].
+If you like `boyl`, please consider [buying me a coffee][coffee].
 
 [coffee]: https://www.paypal.me/miguelmurca/2.50

@@ -1,0 +1,32 @@
+[package]
+name = "boyl"
+version = "0.1.0"
+authors = ["Miguel Murça <mikeevmm@github>"]
+edition = "2018"
+
+[dependencies]
+argh = "~0.1.4"
+shellexpand = "~2.1.0"
+dirs = "~3.0.2"
+serde_json = "~1.0.64"
+colored = "~2.0.0"
+tui = "~0.15.0"
+termion = "~1.5.0"
+read_input = "~0.8.4"
+glob = "~0.3.0"
+oneshot = "~0.1.2"
+parking_lot = "~0.11.1"
+futures = "~0.3.15"
+exitcode = "~1.1.2"
+
+[dependencies.uuid]
+version = "~0.8.2"
+features = ["v4"]
+
+[dependencies.serde]
+version = "~1.0.126"
+features = ["derive"]
+
+[dependencies.tokio]
+version = "~1.6.1"
+features = ["rt", "rt-multi-thread", "time", "sync", "fs"]

@@ -1,0 +1,665 @@
+# The configurations that used for the recording, feel free to edit them
+config:
+
+  # Specify a command to be executed
+  # like `/bin/bash -l`, `ls`, or any other commands
+  # the default is bash for Linux
+  # or powershell.exe for Windows
+  command: bash -l
+  
+  # Specify the current working directory path
+  # the default is the current working directory path
+  cwd: /tmp
+  
+  # Export additional ENV variables
+  env:
+    recording: true
+  
+  # Explicitly set the number of columns
+  # or use `auto` to take the current
+  # number of columns of your shell
+  cols: 80
+  
+  # Explicitly set the number of rows
+  # or use `auto` to take the current
+  # number of rows of your shell
+  rows: 24
+  
+  # Amount of times to repeat GIF
+  # If value is -1, play once
+  # If value is 0, loop indefinitely
+  # If value is a positive number, loop n times
+  repeat: 0
+  
+  # Quality
+  # 1 - 100
+  quality: 100
+  
+  # Delay between frames in ms
+  # If the value is `auto` use the actual recording delays
+  frameDelay: auto
+  
+  # Maximum delay between frames in ms
+  # Ignored if the `frameDelay` isn't set to `auto`
+  # Set to `auto` to prevent limiting the max idle time
+  maxIdleTime: 2000
+  
+  # The surrounding frame box
+  # The `type` can be null, window, floating, or solid`
+  # To hide the title use the value null
+  # Don't forget to add a backgroundColor style with a null as type
+  frameBox:
+    type: floating
+    title: Terminalizer
+    style:
+      border: 0px black solid
+      # boxShadow: none
+      # margin: 0px
+  
+  # Add a watermark image to the rendered gif
+  # You need to specify an absolute path for
+  # the image on your machine or a URL, and you can also
+  # add your own CSS styles
+  watermark:
+    imagePath: null
+    style:
+      position: absolute
+      right: 15px
+      bottom: 15px
+      width: 100px
+      opacity: 0.9
+  
+  # Cursor style can be one of
+  # `block`, `underline`, or `bar`
+  cursorStyle: block
+  
+  # Font family
+  # You can use any font that is installed on your machine
+  # in CSS-like syntax
+  fontFamily: "Monaco, Lucida Console, Ubuntu Mono, Monospace"
+  
+  # The size of the font
+  fontSize: 12
+  
+  # The height of lines
+  lineHeight: 1
+  
+  # The spacing between letters
+  letterSpacing: 0
+  
+  # Theme
+  theme:
+    background: "transparent"
+    foreground: "#afafaf"
+    cursor: "#c7c7c7"
+    black: "#232628"
+    red: "#fc4384"
+    green: "#b3e33b"
+    yellow: "#ffa727"
+    blue: "#75dff2"
+    magenta: "#ae89fe"
+    cyan: "#708387"
+    white: "#d5d5d0"
+    brightBlack: "#626566"
+    brightRed: "#ff7fac"
+    brightGreen: "#c8ed71"
+    brightYellow: "#ebdf86"
+    brightBlue: "#75dff2"
+    brightMagenta: "#ae89fe"
+    brightCyan: "#b1c6ca"
+    brightWhite: "#f9f9f4"
+  
+# Records, feel free to edit them
+records:
+  - delay: 503
+    content: "\e]0;miguelmurca@Aspire-A515-52G:/tmp\e\\\e]7;file://Aspire-A515-52G/tmp\e\\"
+  - delay: 7
+    content: "\r\n\e[1;36m/tmp\e[0m \r\n\e[1;32mλ\e[0m "
+  - delay: 934
+    content: c
+  - delay: 88
+    content: d
+  - delay: 161
+    content: ' '
+  - delay: 213
+    content: c
+  - delay: 74
+    content: /
+  - delay: 622
+    content: "\r\n"
+  - delay: 11
+    content: "\e]0;miguelmurca@Aspire-A515-52G:/tmp/c\e\\\e]7;file://Aspire-A515-52G/tmp/c\e\\"
+  - delay: 33
+    content: "\r\n\e[1;36m/tmp/c\e[0m via \e[1;33m\U0001F40D \e[0m\e[1;33mv3.8.10\e[0m \r\n\e[1;32mλ\e[0m "
+  - delay: 451
+    content: l
+  - delay: 74
+    content: s
+  - delay: 110
+    content: ' '
+  - delay: 207
+    content: '-'
+  - delay: 346
+    content: l
+  - delay: 399
+    content: "\r\n"
+  - delay: 15
+    content: "total 64\r\ndrwxrwxr-x 2 miguelmurca miguelmurca  4096 Jul  2 00:46 \e[0m\e[01;34massets\e[0m\r\ndrwxrwxr-x 2 miguelmurca miguelmurca  4096 Jul  2 00:48 \e[01;34minclude\e[0m\r\n-rw-rw-r-- 1 miguelmurca miguelmurca    21 Jul  2 00:46 main.c\r\n-rw-rw-r-- 1 miguelmurca miguelmurca  3114 Jul  2 00:47 make.py\r\n-rw-rw-r-- 1 miguelmurca miguelmurca 40302 Jul  2 00:47 sane.py\r\ndrwxr-xr-x 2 miguelmurca miguelmurca  4096 Jul  2 00:47 \e[01;34msrc\e[0m\r\ndrwxrwxr-x 2 miguelmurca miguelmurca  4096 Jul  2 00:48 \e[01;34mtests\e[0m\r\n\e]0;miguelmurca@Aspire-A515-52G:/tmp/c\e\\"
+  - delay: 5
+    content: "\e]7;file://Aspire-A515-52G/tmp/c\e\\"
+  - delay: 36
+    content: "\r\n\e[1;36m/tmp/c\e[0m via \e[1;33m\U0001F40D \e[0m\e[1;33mv3.8.10\e[0m \r\n\e[1;32mλ\e[0m "
+  - delay: 1330
+    content: b
+  - delay: 134
+    content: o
+  - delay: 76
+    content: 'y'
+  - delay: 182
+    content: l
+  - delay: 166
+    content: ' '
+  - delay: 272
+    content: m
+  - delay: 80
+    content: a
+  - delay: 84
+    content: k
+  - delay: 84
+    content: e
+  - delay: 102
+    content: ' '
+  - delay: 154
+    content: '-'
+  - delay: 158
+    content: '-'
+  - delay: 166
+    content: h
+  - delay: 104
+    content: e
+  - delay: 62
+    content: l
+  - delay: 138
+    content: p
+  - delay: 282
+    content: "\r\n"
+  - delay: 13
+    content: "Usage: boyl make <name> [-l <location>] [--description <description>]\r\n\r\nInteractively generates a new template.\r\n\r\nOptions:\r\n  -l, --location    what directory to copy as a template [default: <current\r\n                    dir.>]\r\n  --description     description of the template [default: None]\r\n  --help            display usage information\r\n\r\n\e]0;miguelmurca@Aspire-A515-52G:/tmp/c\e\\\e]7;file://Aspire-A515-52G/tmp/c\e\\"
+  - delay: 37
+    content: "\r\n\e[1;36m/tmp/c\e[0m via \e[1;33m\U0001F40D \e[0m\e[1;33mv3.8.10\e[0m \r\n\e[1;32mλ\e[0m "
+  - delay: 1203
+    content: b
+  - delay: 63
+    content: o
+  - delay: 98
+    content: 'y'
+  - delay: 198
+    content: l
+  - delay: 132
+    content: ' '
+  - delay: 200
+    content: m
+  - delay: 70
+    content: a
+  - delay: 92
+    content: k
+  - delay: 94
+    content: e
+  - delay: 132
+    content: ' '
+  - delay: 488
+    content: c
+  - delay: 842
+    content: "\r\n"
+  - delay: 17
+    content: "\e[2J\e[1;1H\e[1;1H┌──────────────────────────────────────────────────────────────────────────────┐\e[2;1H│\e[1m\e[3m\e[38;5;15m\e[48;5;8massets                                                                        \e[22m\e[23m\e[39m\e[49m│\e[3;1H│make.py\e[3;80H│\e[4;1H│\e[1m\e[3mtests                                                                         \e[22m\e[23m│\e[5;1H│main.c\e[5;80H│\e[6;1H│\e[1m\e[3msrc                                                                           \e[22m\e[23m│\e[7;1H│\e[1m\e[3minclude                                                                       \e[22m\e[23m│\e[8;1H│\e[1m\e[3m.vscode                                                                       \e[22m\e[23m│\e[9;1H│sane.py\e[9;80H│\e[10;1H│\e[10;80H│\e[11;1H│\e[11;80H│\e[12;1H│\e[12;80H│\e[13;1H│\e[13;80H│\e[14;1H│\e[14;80H│\e[15;1H│\e[15;80H│\e[16;1H│\e[16;80H│\e[17;1H│\e[17;80H│\e[18;1H│\e[18;80H│\e[19;1H│\e[19;80H│\e[20;1H│\e[20;80H│\e[21;1H│\e[21;80H│\e[22;1H└──────────────────────────────────────────────────────────────────────────────┘\e[23;1H\e[38;5;0m\e[48;5;2m[Up/K] Move up in list  [Down/J] Move down in list  [O] Open/Close folder       \e[24;1H[X] Exclude/Include file  [Z] Exclude pattern  [R] Reset  [Enter] Finish        \e[39m\e[49m\e[m\e[?25l"
+  - delay: 849
+    content: "\e[39m\e[49m\e[m\e[?25l"
+  - delay: 174
+    content: "\e[2;2H\e[1m\e[3massets                                                                        \e[3;2H\e[22m\e[23m\e[38;5;15m\e[48;5;8mmake.py                                                                       \e[39m\e[49m\e[m\e[?25l"
+  - delay: 150
+    content: "\e[3;2Hmake.py                                                                       \e[4;2H\e[1m\e[3m\e[38;5;15m\e[48;5;8mtests                                                                         \e[39m\e[49m\e[m\e[?25l"
+  - delay: 165
+    content: "\e[5;2H tests/.gitinclude\e[6;2Hmain.c                                                                        \e[7;2H\e[1m\e[3msr\e[7;5H    \e[8;2Hinclu\e[9;2H.vscode                                                                       \e[10;2H\e[22m\e[23msane.py\e[39m\e[49m\e[m\e[?25l"
+  - delay: 209
+    content: "\e[4;2H\e[1m\e[3mtests                                                                         \e[5;2H\e[22m\e[23m\e[38;5;15m\e[48;5;8m tests/.gitinclude                                                            \e[39m\e[49m\e[m\e[?25l"
+  - delay: 165
+    content: "\e[5;2H tests/.gitinclude                                                            \e[6;2H\e[38;5;15m\e[48;5;8mmain.c                                                                        \e[39m\e[49m\e[m\e[?25l"
+  - delay: 168
+    content: "\e[6;2Hmain.c                                                                        \e[7;2H\e[1m\e[3m\e[38;5;15m\e[48;5;8msrc                                                                           \e[39m\e[49m\e[m\e[?25l"
+  - delay: 429
+    content: "\e[7;2H\e[1m\e[3msrc                                                                           \e[8;2H\e[38;5;15m\e[48;5;8minclude                                                                       \e[39m\e[49m\e[m\e[?25l"
+  - delay: 158
+    content: "\e[8;2H\e[1m\e[3minclude                                                                       \e[9;2H\e[38;5;15m\e[48;5;8m.vscode                                                                       \e[39m\e[49m\e[m\e[?25l"
+  - delay: 140
+    content: "\e[9;2H\e[1m\e[3m\e[2m\e[38;5;15m\e[48;5;8m.vscode                                                                       \e[39m\e[49m\e[m\e[?25l"
+  - delay: 638
+    content: "\e[8;2H\e[1m\e[3m\e[38;5;15m\e[48;5;8minclude                                                                       \e[9;2H\e[2m\e[39m\e[49m.vscode                                                                       \e[39m\e[49m\e[m\e[?25l"
+  - delay: 247
+    content: "\e[9;2H include/.gitinclude                                                          \e[10;2H\e[1m\e[3m\e[2m.vscode                                                                       \e[11;2H\e[22m\e[23m\e[22msane.py\e[39m\e[49m\e[m\e[?25l"
+  - delay: 304
+    content: "\e[8;2H\e[1m\e[3minclude                                                                       \e[9;2H\e[22m\e[23m\e[38;5;15m\e[48;5;8m include/.gitinclude                                                          \e[39m\e[49m\e[m\e[?25l"
+  - delay: 164
+    content: "\e[9;2H include/.gitinclude                                                          \e[10;2H\e[1m\e[3m\e[2m\e[38;5;15m\e[48;5;8m.vscode                                                                       \e[39m\e[49m\e[m\e[?25l"
+  - delay: 107
+    content: "\e[10;2H\e[1m\e[3m\e[38;5;15m\e[48;5;8m.vscode                                                                       \e[39m\e[49m\e[m\e[?25l"
+  - delay: 496
+    content: "\e[11;2H .vscode/settings.json\e[12;2Hsane.py\e[39m\e[49m\e[m\e[?25l"
+  - delay: 490
+    content: "\e[10;2H\e[1m\e[3m\e[2m\e[38;5;15m\e[48;5;8m.vscode                                                                       \e[11;2H\e[22m\e[2m\e[23m\e[39m\e[49m .vscode/settings.json                                                        \e[39m\e[49m\e[m\e[?25l"
+  - delay: 980
+    content: "\e[22;1H│                                                                              │\e[23;1H└──────────────────────────────────────────────────────────────────────────────┘\e[24;1H\e[1m\e[38;5;0m\e[48;5;2mIgnore pattern: \e[22m\e[48;5;15m \e[48;5;2m  \e[24;21H    \e[24;27H   \e[24;31H       \e[24;39H       \e[24;48H   \e[24;52H     \e[24;59H       \e[24;67H      \e[39m\e[49m\e[m\e[?25l"
+  - delay: 794
+    content: "\e[24;17H\e[38;5;0m\e[48;5;2m*\e[48;5;15m \e[39m\e[49m\e[m\e[?25l"
+  - delay: 122
+    content: "\e[24;18H\e[38;5;0m\e[48;5;2m*\e[48;5;15m \e[39m\e[49m\e[m\e[?25l"
+  - delay: 454
+    content: "\e[24;19H\e[38;5;0m\e[48;5;2m/\e[48;5;15m \e[39m\e[49m\e[m\e[?25l"
+  - delay: 197
+    content: "\e[24;20H\e[38;5;0m\e[48;5;2m.\e[48;5;15m \e[39m\e[49m\e[m\e[?25l"
+  - delay: 654
+    content: "\e[24;21H\e[38;5;0m\e[48;5;2mg\e[48;5;15m \e[39m\e[49m\e[m\e[?25l"
+  - delay: 98
+    content: "\e[24;22H\e[38;5;0m\e[48;5;2mi\e[48;5;15m \e[39m\e[49m\e[m\e[?25l"
+  - delay: 67
+    content: "\e[24;23H\e[38;5;0m\e[48;5;2mt\e[48;5;15m \e[39m\e[49m\e[m\e[?25l"
+  - delay: 274
+    content: "\e[24;24H\e[38;5;0m\e[48;5;2mi\e[48;5;15m \e[39m\e[49m\e[m\e[?25l"
+  - delay: 141
+    content: "\e[24;25H\e[38;5;0m\e[48;5;2mn\e[48;5;15m \e[39m\e[49m\e[m\e[?25l"
+  - delay: 129
+    content: "\e[24;26H\e[38;5;0m\e[48;5;2mc\e[48;5;15m \e[39m\e[49m\e[m\e[?25l"
+  - delay: 55
+    content: "\e[24;27H\e[38;5;0m\e[48;5;2ml\e[48;5;15m \e[39m\e[49m\e[m\e[?25l"
+  - delay: 125
+    content: "\e[24;28H\e[38;5;0m\e[48;5;2mu\e[48;5;15m \e[39m\e[49m\e[m\e[?25l"
+  - delay: 372
+    content: "\e[24;29H\e[38;5;0m\e[48;5;2md\e[48;5;15m \e[39m\e[49m\e[m\e[?25l"
+  - delay: 146
+    content: "\e[24;30H\e[38;5;0m\e[48;5;2me\e[48;5;15m \e[39m\e[49m\e[m\e[?25l"
+  - delay: 144
+    content: "\e[5;2H\e[2m tests/.gitinclude                                                            \e[9;2H include/.gitinclude                                                          \e[22;1H\e[22m└──────────────────────────────────────────────────────────────────────────────┘\e[23;1H\e[38;5;0m\e[48;5;2m[Up/K] Move up in list  [Down/J] Move down in list  [O] Open/Close folder       \e[24;1H[X] Exclude/Include f\e[24;23Hle  [Z] Exclude\e[24;39Hpattern\e[24;48H[R]\e[24;52HReset\e[24;59H[Enter]\e[24;67HFinish\e[39m\e[49m\e[m\e[?25l"
+  - delay: 1379
+    content: "\e[2J\e[1;1H\e[?25h"
+  - delay: 7
+    content: "⠋ /tmp/c/assets                                                          ⠋\r⠍ /tmp/c/make.py                                                         ⠍\r⠎ /tmp/c/tests                                                           ⠎\r⡅ /tmp/c/main.c                                                          ⡅\r⡆ /tmp/c/src                                                             ⡆\r⣄ /tmp/c/include                                                         ⣄\r⣠ /tmp/c/sane.py                                                         ⣠\r⣈ /tmp/c/src/main.c                                                      ⣈\r                                                                                \r\r\nNew template \e[1mc\e[0m was created.\r\n\e[2mCall\e[0m \e[32mboyl new c\e[0m \e[2mto create a new instance of this template.\e[0m\r\n\e]0;miguelmurca@Aspire-A515-52G:/tmp/c\e\\"
+  - delay: 5
+    content: "\e]7;file://Aspire-A515-52G/tmp/c\e\\"
+  - delay: 32
+    content: "\r\n\e[1;36m/tmp/c\e[0m via \e[1;33m\U0001F40D \e[0m\e[1;33mv3.8.10\e[0m \r\n\e[1;32mλ\e[0m "
+  - delay: 1723
+    content: c
+  - delay: 90
+    content: d
+  - delay: 84
+    content: ' '
+  - delay: 208
+    content: .
+  - delay: 159
+    content: .
+  - delay: 271
+    content: "\r\n"
+  - delay: 11
+    content: "\e]0;miguelmurca@Aspire-A515-52G:/tmp\e\\\e]7;file://Aspire-A515-52G/tmp\e\\"
+  - delay: 35
+    content: "\r\n\e[1;36m/tmp\e[0m \r\n\e[1;32mλ\e[0m "
+  - delay: 964
+    content: b
+  - delay: 48
+    content: o
+  - delay: 103
+    content: 'y'
+  - delay: 175
+    content: l
+  - delay: 131
+    content: ' '
+  - delay: 439
+    content: 'n'
+  - delay: 65
+    content: e
+  - delay: 59
+    content: w
+  - delay: 124
+    content: ' '
+  - delay: 520
+    content: c
+  - delay: 543
+    content: "\r\n"
+  - delay: 14
+    content: "\e[31mCannot create new template:\e[0m\r\n/tmp/c already exists, and is not empty.\r\n\e]0;miguelmurca@Aspire-A515-52G:/tmp\e\\"
+  - delay: 5
+    content: "\e]7;file://Aspire-A515-52G/tmp\e\\"
+  - delay: 35
+    content: "\r\n\e[1;36m/tmp\e[0m \r\n\e[1;31mλ\e[0m "
+  - delay: 1214
+    content: b
+  - delay: 60
+    content: o
+  - delay: 91
+    content: 'y'
+  - delay: 183
+    content: l
+  - delay: 166
+    content: ' '
+  - delay: 514
+    content: 'n'
+  - delay: 52
+    content: e
+  - delay: 44
+    content: w
+  - delay: 145
+    content: ' '
+  - delay: 150
+    content: '-'
+  - delay: 147
+    content: '-'
+  - delay: 208
+    content: h
+  - delay: 84
+    content: e
+  - delay: 94
+    content: l
+  - delay: 122
+    content: p
+  - delay: 305
+    content: "\r\n"
+  - delay: 14
+    content: "Usage: boyl new <template> [-n <name>] [-l <location>]\r\n\r\nCreates a new project. Available templates can be found with `boyl list`.\r\n\r\nOptions:\r\n  -n, --name        the name for the new project [default: <current dir. name>]\r\n  -l, --location    where to create the new project [default: <current dir.>]\r\n  --help            display usage information\r\n\r\n\e]0;miguelmurca@Aspire-A515-52G:/tmp\e\\\e]7;file://Aspire-A515-52G/tmp\e\\"
+  - delay: 30
+    content: "\r\n\e[1;36m/tmp\e[0m \r\n\e[1;32mλ\e[0m "
+  - delay: 1167
+    content: b
+  - delay: 89
+    content: o
+  - delay: 95
+    content: 'y'
+  - delay: 175
+    content: l
+  - delay: 141
+    content: ' '
+  - delay: 340
+    content: 'n'
+  - delay: 56
+    content: e
+  - delay: 62
+    content: w
+  - delay: 97
+    content: ' '
+  - delay: 499
+    content: c
+  - delay: 86
+    content: ' '
+  - delay: 180
+    content: '-'
+  - delay: 514
+    content: 'n'
+  - delay: 74
+    content: ' '
+  - delay: 198
+    content: o
+  - delay: 106
+    content: t
+  - delay: 96
+    content: h
+  - delay: 108
+    content: e
+  - delay: 74
+    content: r
+  - delay: 395
+    content: _
+  - delay: 125
+    content: c
+  - delay: 187
+    content: _
+  - delay: 243
+    content: p
+  - delay: 150
+    content: r
+  - delay: 208
+    content: o
+  - delay: 146
+    content: j
+  - delay: 88
+    content: e
+  - delay: 76
+    content: c
+  - delay: 194
+    content: t
+  - delay: 158
+    content: "\r\n"
+  - delay: 21
+    content: "⠋ /home/miguelmurca/.config/boyl/templates/c/assets                      ⠋\r⠍ /home/miguelmurca/.config/boyl/templates/c/make.py                     ⠍\r⠎ /home/miguelmurca/.config/boyl/templates/c/tests                       ⠎\r⡅ /home/miguelmurca/.config/boyl/templates/c/main.c                      ⡅\r⡆ /home/miguelmurca/.config/boyl/templates/c/src                         ⡆\r⣄ /home/miguelmurca/.config/boyl/templates/c/include                     ⣄\r⣠ /home/miguelmurca/.config/boyl/templates/c/sane.py                     ⣠\r⣈ /home/miguelmurca/.config/boyl/templates/c/src/main.c                  ⣈\r                                                                                \r\r\n\e[32mCreated new template\e[0m c \e[32min\e[0m /tmp/other_c_project.\r\n\e]0;miguelmurca@Aspire-A515-52G:/tmp\e\\\e]7;file://Aspire-A515-52G/tmp\e\\"
+  - delay: 34
+    content: "\r\n\e[1;36m/tmp\e[0m \r\n\e[1;32mλ\e[0m "
+  - delay: 858
+    content: c
+  - delay: 79
+    content: d
+  - delay: 131
+    content: ' '
+  - delay: 741
+    content: o
+  - delay: 109
+    content: t
+  - delay: 144
+    content: h
+  - delay: 288
+    content: e
+  - delay: 43
+    content: r
+  - delay: 159
+    content: _c_project/
+  - delay: 575
+    content: "\r\n"
+  - delay: 11
+    content: "\e]0;miguelmurca@Aspire-A515-52G:/tmp/other_c_project\e\\"
+  - delay: 6
+    content: "\e]7;file://Aspire-A515-52G/tmp/other_c_project\e\\"
+  - delay: 27
+    content: "\r\n\e[1;36m/tmp/other_c_project\e[0m via \e[1;33m\U0001F40D \e[0m\e[1;33mv3.8.10\e[0m \r\n\e[1;32mλ\e[0m "
+  - delay: 675
+    content: l
+  - delay: 57
+    content: s
+  - delay: 144
+    content: ' '
+  - delay: 530
+    content: '-'
+  - delay: 200
+    content: l
+  - delay: 223
+    content: "\r\n"
+  - delay: 16
+    content: "total 64\r\ndrwxrwxr-x 2 miguelmurca miguelmurca  4096 Jul  2 01:55 \e[0m\e[01;34massets\e[0m\r\ndrwxrwxr-x 2 miguelmurca miguelmurca  4096 Jul  2 01:55 \e[01;34minclude\e[0m\r\n-rw-rw-r-- 1 miguelmurca miguelmurca    21 Jul  2 01:55 main.c\r\n-rw-rw-r-- 1 miguelmurca miguelmurca  3114 Jul  2 01:55 make.py\r\n-rw-rw-r-- 1 miguelmurca miguelmurca 40302 Jul  2 01:55 sane.py\r\ndrwxrwxr-x 2 miguelmurca miguelmurca  4096 Jul  2 01:55 \e[01;34msrc\e[0m\r\ndrwxrwxr-x 2 miguelmurca miguelmurca  4096 Jul  2 01:55 \e[01;34mtests\e[0m\r\n\e]0;miguelmurca@Aspire-A515-52G:/tmp/other_c_project\e\\"
+  - delay: 6
+    content: "\e]7;file://Aspire-A515-52G/tmp/other_c_project\e\\"
+  - delay: 34
+    content: "\r\n\e[1;36m/tmp/other_c_project\e[0m via \e[1;33m\U0001F40D \e[0m\e[1;33mv3.8.10\e[0m \r\n\e[1;32mλ\e[0m "
+  - delay: 1635
+    content: b
+  - delay: 40
+    content: o
+  - delay: 140
+    content: 'y'
+  - delay: 135
+    content: l
+  - delay: 101
+    content: ' '
+  - delay: 1083
+    content: l
+  - delay: 107
+    content: i
+  - delay: 50
+    content: s
+  - delay: 70
+    content: t
+  - delay: 318
+    content: "\r\n"
+  - delay: 14
+    content: "\e[1mc\e[0m\r\n  \e[3mNo description.\e[0m\r\n\e]0;miguelmurca@Aspire-A515-52G:/tmp/other_c_project\e\\"
+  - delay: 5
+    content: "\e]7;file://Aspire-A515-52G/tmp/other_c_project\e\\"
+  - delay: 37
+    content: "\r\n\e[1;36m/tmp/other_c_project\e[0m via \e[1;33m\U0001F40D \e[0m\e[1;33mv3.8.10\e[0m \r\n\e[1;32mλ\e[0m "
+  - delay: 1161
+    content: b
+  - delay: 24
+    content: o
+  - delay: 154
+    content: 'y'
+  - delay: 103
+    content: ' '
+  - delay: 67
+    content: l
+  - delay: 359
+    content: "\b\e[K"
+  - delay: 135
+    content: "\b\e[K"
+  - delay: 295
+    content: l
+  - delay: 111
+    content: ' '
+  - delay: 199
+    content: e
+  - delay: 295
+    content: d
+  - delay: 161
+    content: i
+  - delay: 92
+    content: t
+  - delay: 159
+    content: "\r\n"
+  - delay: 18
+    content: "\e[2J\e[1;1H\e[1;1H┌Templates:────────────────────────────────────────────────────────────────────┐\e[2;1H│\e[38;5;15m\e[48;5;8mc \e[38;5;7m(No description.)\e[38;5;15m                                                           \e[39m\e[49m│\e[3;1H│\e[3;80H│\e[4;1H│\e[4;80H│\e[5;1H│\e[5;80H│\e[6;1H│\e[6;80H│\e[7;1H│\e[7;80H│\e[8;1H│\e[8;80H│\e[9;1H│\e[9;80H│\e[10;1H│\e[10;80H│\e[11;1H│\e[11;80H│\e[12;1H│\e[12;80H│\e[13;1H│\e[13;80H│\e[14;1H│\e[14;80H│\e[15;1H│\e[15;80H│\e[16;1H│\e[16;80H│\e[17;1H│\e[17;80H│\e[18;1H│\e[18;80H│\e[19;1H│\e[19;80H│\e[20;1H│\e[20;80H│\e[21;1H│\e[21;80H│\e[22;1H└──────────────────────────────────────────────────────────────────────────────┘\e[23;1H\e[38;5;0m\e[48;5;2m[Up/K] Move up in list  [Down/J] Move down in list                              \e[24;1H[X] Delete template  [E] Edit description  [Q] Exit                             \e[39m\e[49m\e[m\e[?25l"
+  - delay: 2065
+    content: "\e[22;1H│                                                                              │\e[23;1H└──────────────────────────────────────────────────────────────────────────────┘\e[24;1H\e[1m\e[38;5;0m\e[48;5;2mNew description: \e[22m\e[48;5;15m \e[48;5;2m \e[24;22H   \e[24;26H    \e[24;31H           \e[24;44H   \e[24;48H    \e[39m\e[49m\e[m\e[?25l"
+  - delay: 1175
+    content: "\e[24;18H\e[38;5;0m\e[48;5;2mA\e[48;5;15m \e[39m\e[49m\e[m\e[?25l"
+  - delay: 159
+    content: "\e[24;19H\e[38;5;0m\e[48;5;2m \e[48;5;15m \e[39m\e[49m\e[m\e[?25l"
+  - delay: 204
+    content: "\e[24;20H\e[38;5;0m\e[48;5;2md\e[48;5;15m \e[39m\e[49m\e[m\e[?25l"
+  - delay: 154
+    content: "\e[24;21H\e[38;5;0m\e[48;5;2me\e[48;5;15m \e[39m\e[49m\e[m\e[?25l"
+  - delay: 180
+    content: "\e[24;22H\e[38;5;0m\e[48;5;2mf\e[48;5;15m \e[39m\e[49m\e[m\e[?25l"
+  - delay: 78
+    content: "\e[24;23H\e[38;5;0m\e[48;5;2ma\e[48;5;15m \e[39m\e[49m\e[m\e[?25l"
+  - delay: 84
+    content: "\e[24;24H\e[38;5;0m\e[48;5;2mu\e[48;5;15m \e[39m\e[49m\e[m\e[?25l"
+  - delay: 58
+    content: "\e[24;25H\e[38;5;0m\e[48;5;2ml\e[48;5;15m \e[39m\e[49m\e[m\e[?25l"
+  - delay: 98
+    content: "\e[24;26H\e[38;5;0m\e[48;5;2mt\e[48;5;15m \e[39m\e[49m\e[m\e[?25l"
+  - delay: 135
+    content: "\e[24;27H\e[38;5;0m\e[48;5;2m \e[48;5;15m \e[39m\e[49m\e[m\e[?25l"
+  - delay: 147
+    content: "\e[24;28H\e[38;5;0m\e[48;5;2mC\e[48;5;15m \e[39m\e[49m\e[m\e[?25l"
+  - delay: 102
+    content: "\e[24;29H\e[38;5;0m\e[48;5;2m \e[48;5;15m \e[39m\e[49m\e[m\e[?25l"
+  - delay: 156
+    content: "\e[24;30H\e[38;5;0m\e[48;5;2mp\e[48;5;15m \e[39m\e[49m\e[m\e[?25l"
+  - delay: 114
+    content: "\e[24;31H\e[38;5;0m\e[48;5;2mr\e[48;5;15m \e[39m\e[49m\e[m\e[?25l"
+  - delay: 78
+    content: "\e[24;32H\e[38;5;0m\e[48;5;2mo\e[48;5;15m \e[39m\e[49m\e[m\e[?25l"
+  - delay: 420
+    content: "\e[24;33H\e[38;5;0m\e[48;5;2mj\e[48;5;15m \e[39m\e[49m\e[m\e[?25l"
+  - delay: 92
+    content: "\e[24;34H\e[38;5;0m\e[48;5;2me\e[48;5;15m \e[39m\e[49m\e[m\e[?25l"
+  - delay: 66
+    content: "\e[24;35H\e[38;5;0m\e[48;5;2mc\e[48;5;15m \e[39m\e[49m\e[m\e[?25l"
+  - delay: 197
+    content: "\e[24;36H\e[38;5;0m\e[48;5;2mt\e[48;5;15m \e[39m\e[49m\e[m\e[?25l"
+  - delay: 150
+    content: "\e[24;37H\e[38;5;0m\e[48;5;2m.\e[48;5;15m \e[39m\e[49m\e[m\e[?25l"
+  - delay: 323
+    content: "\e[2;4H\e[38;5;7m\e[48;5;8mA default C project.\e[22;1H\e[39m\e[49m└──────────────────────────────────────────────────────────────────────────────┘\e[23;1H\e[38;5;0m\e[48;5;2m[Up/K] Move up in list  [Down/J] Move down in list                              \e[24;1H[X] Delete template  [E] Edit description\e[24;44H[Q]\e[24;48HExit\e[39m\e[49m\e[m\e[?25l"
+  - delay: 1769
+    content: "\e[2J\e[1;1H\e[?25h\e]0;miguelmurca@Aspire-A515-52G:/tmp/other_c_project\e\\"
+  - delay: 5
+    content: "\e]7;file://Aspire-A515-52G/tmp/other_c_project\e\\"
+  - delay: 36
+    content: "\r\n\e[1;36m/tmp/other_c_project\e[0m via \e[1;33m\U0001F40D \e[0m\e[1;33mv3.8.10\e[0m \r\n\e[1;32mλ\e[0m "
+  - delay: 839
+    content: b
+  - delay: 38
+    content: o
+  - delay: 116
+    content: 'y'
+  - delay: 150
+    content: l
+  - delay: 236
+    content: ' '
+  - delay: 109
+    content: l
+  - delay: 123
+    content: i
+  - delay: 61
+    content: s
+  - delay: 71
+    content: t
+  - delay: 147
+    content: "\r\n"
+  - delay: 14
+    content: "\e[1mc\e[0m\r\n  A default C project.\r\n\e]0;miguelmurca@Aspire-A515-52G:/tmp/other_c_project\e\\\e]7;file://Aspire-A515-52G/tmp/other_c_project\e\\"
+  - delay: 36
+    content: "\r\n\e[1;36m/tmp/other_c_project\e[0m via \e[1;33m\U0001F40D \e[0m\e[1;33mv3.8.10\e[0m \r\n\e[1;32mλ\e[0m "
+  - delay: 1000
+    content: b
+  - delay: 81
+    content: o
+  - delay: 169
+    content: 'y'
+  - delay: 12
+    content: u
+  - delay: 403
+    content: "\b\e[K"
+  - delay: 217
+    content: l
+  - delay: 109
+    content: ' '
+  - delay: 156
+    content: t
+  - delay: 173
+    content: r
+  - delay: 61
+    content: e
+  - delay: 155
+    content: e
+  - delay: 155
+    content: ' '
+  - delay: 189
+    content: c
+  - delay: 291
+    content: "\r\n"
+  - delay: 16
+    content: "\e[2J\e[1;1H\e[1;1H┌──────────────────────────────────────────────────────────────────────────────┐\e[2;1H│\e[1m\e[3m\e[38;5;15m\e[48;5;8massets                                                                        \e[22m\e[23m\e[39m\e[49m│\e[3;1H│make.py\e[3;80H│\e[4;1H│\e[1m\e[3mtests                                                                         \e[22m\e[23m│\e[5;1H│main.c\e[5;80H│\e[6;1H│\e[1m\e[3msrc                                                                           \e[22m\e[23m│\e[7;1H│\e[1m\e[3minclude                                                                       \e[22m\e[23m│\e[8;1H│sane.py\e[8;80H│\e[9;1H│\e[9;80H│\e[10;1H│\e[10;80H│\e[11;1H│\e[11;80H│\e[12;1H│\e[12;80H│\e[13;1H│\e[13;80H│\e[14;1H│\e[14;80H│\e[15;1H│\e[15;80H│\e[16;1H│\e[16;80H│\e[17;1H│\e[17;80H│\e[18;1H│\e[18;80H│\e[19;1H│\e[19;80H│\e[20;1H│\e[20;80H│\e[21;1H│\e[21;80H│\e[22;1H└──────────────────────────────────────────────────────────────────────────────┘\e[23;1H\e[38;5;0m\e[48;5;2m[Up/K] Move up in list  [Down/J] Move down in list                              \e[24;1H[O] Open/Close folder  [Enter/Q] Exit                                           \e[39m\e[49m\e[m\e[?25l"
+  - delay: 926
+    content: "\e[39m\e[49m\e[m\e[?25l"
+  - delay: 246
+    content: "\e[2;2H\e[1m\e[3massets                                                                        \e[3;2H\e[22m\e[23m\e[38;5;15m\e[48;5;8mmake.py                                                                       \e[39m\e[49m\e[m\e[?25l"
+  - delay: 148
+    content: "\e[3;2Hmake.py                                                                       \e[4;2H\e[1m\e[3m\e[38;5;15m\e[48;5;8mtests                                                                         \e[39m\e[49m\e[m\e[?25l"
+  - delay: 158
+    content: "\e[39m\e[49m\e[m\e[?25l"
+  - delay: 246
+    content: "\e[4;2H\e[1m\e[3mtests                                                                         \e[5;2H\e[22m\e[23m\e[38;5;15m\e[48;5;8mmain.c                                                                        \e[39m\e[49m\e[m\e[?25l"
+  - delay: 160
+    content: "\e[5;2Hmain.c                                                                        \e[6;2H\e[1m\e[3m\e[38;5;15m\e[48;5;8msrc                                                                           \e[39m\e[49m\e[m\e[?25l"
+  - delay: 168
+    content: "\e[7;2H src/main.c                                                                   \e[8;2H\e[1m\e[3minclude                                                                       \e[9;2H\e[22m\e[23msane.py\e[39m\e[49m\e[m\e[?25l"
+  - delay: 398
+    content: "\e[6;2H\e[1m\e[3msrc                                                                           \e[7;2H\e[22m\e[23m\e[38;5;15m\e[48;5;8m src/main.c                                                                   \e[39m\e[49m\e[m\e[?25l"
+  - delay: 162
+    content: "\e[7;2H src/main.c                                                                   \e[8;2H\e[1m\e[3m\e[38;5;15m\e[48;5;8minclude                                                                       \e[39m\e[49m\e[m\e[?25l"
+  - delay: 134
+    content: "\e[39m\e[49m\e[m\e[?25l"
+  - delay: 1159
+    content: "\e[2J\e[1;1H\e[?25h\e]0;miguelmurca@Aspire-A515-52G:/tmp/other_c_project\e\\"
+  - delay: 5
+    content: "\e]7;file://Aspire-A515-52G/tmp/other_c_project\e\\"
+  - delay: 37
+    content: "\r\n\e[1;36m/tmp/other_c_project\e[0m via \e[1;33m\U0001F40D \e[0m\e[1;33mv3.8.10\e[0m \r\n\e[1;32mλ\e[0m "
+  - delay: 1483
+    content: "logout\r\n"

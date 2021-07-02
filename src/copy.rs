@@ -1,4 +1,5 @@
 use crate::ui::spinner::Spinner;
+use colored::Colorize;
 use futures::{Stream, StreamExt};
 use std::path::Path;
 use termion::terminal_size;
@@ -46,7 +47,7 @@ pub async fn recursive_copy(
         let target_file = to_base_dir.join(base_file);
 
         if let Err(e) = copy_from_to(&file, &target_file).await {
-            println!("Some error occurred; cleaning up the templates directory first...");
+            println!("{}", "Some error occurred; cleaning up the templates directory first...".red());
             std::fs::remove_dir_all(to_base_dir).ok();
             panic!("{}", e);
         }

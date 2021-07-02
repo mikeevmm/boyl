@@ -35,6 +35,8 @@ pub fn new(config: &LoadedConfig, template: &str, name: Option<&str>, location: 
         std::process::exit(exitcode::USAGE);
     }
 
+    std::fs::create_dir(target_base_dir.clone()).expect("Could not create target base directory.");
+
     let tokio_runtime = tokio::runtime::Builder::new_multi_thread().build().unwrap();
     tokio_runtime.block_on({
         async {

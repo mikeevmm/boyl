@@ -235,7 +235,7 @@ impl<'path, B: Backend> UiState<B> for FileTreeUi<'path> {
                 self.file_list.toggle_folder();
                 None
             }
-            Key::Char('\n') | Key::Char('\r') | Key::Ctrl('c') => Some(UiStateReaction::Exit),
+            Key::Char('\n') | Key::Char('\r') | Key::Ctrl('c') | Key::Char('q') => Some(UiStateReaction::Exit),
             _ => None,
         }
     }
@@ -249,7 +249,7 @@ impl<'path, B: Backend> UiState<B> for FileTreeUi<'path> {
             super::help::make_help_box("Up/K", "Move up in list"),
             super::help::make_help_box("Down/J", "Move down in list"),
             super::help::make_help_box("O", "Open/Close folder"),
-            super::help::make_help_box("Enter", "Exit"),
+            super::help::make_help_box("Enter/Q", "Exit"),
         ]
         .into_iter()
         .unzip();

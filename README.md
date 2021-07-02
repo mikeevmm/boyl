@@ -46,6 +46,8 @@ This will make `boyl` available from the command-line immediately.
 
 [Yes:](https://news.ycombinator.com/item?id=3067434)
 
+![Demo gif.](demo.gif)
+
 ## FAQ
 
 ### Why should I use `boyl` rather than cargo/npm/gradle/etc?

@@ -91,7 +91,7 @@ struct NewCommand {
     /// the project template to use
     template: String,
     #[argh(option, short = 'n')]
-    /// the name for the new project [default: <current dir. name>]
+    /// the name for the new project [default: <template name>]
     name: Option<String>,
     #[argh(option, short = 'l')]
     /// where to create the new project [default: <current dir.>]

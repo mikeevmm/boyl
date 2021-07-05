@@ -44,7 +44,7 @@ This will make `boyl` available from the command-line immediately.
 
 ## Is it any good?
 
-[Yes:](https://news.ycombinator.com/item?id=3067434)
+[Yes.](https://news.ycombinator.com/item?id=3067434)
 
 ![Demo gif.](demo.gif)
 

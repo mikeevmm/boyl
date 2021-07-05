@@ -67,6 +67,14 @@ Regardless, `boyl` fills a void for languages that do not provide these tools
 You can if you want to. `boyl` is just a glorified `cp` with some niceties on
 top, anyway.
 
+### Where are the template folders saved to?
+
+By default, `boyl` uses the [dirs][dirs] crate to find your OS's configuration directory (e.g., `~/.config`), and saves its settings and folders to `<configuration directory>/boyl`.
+
+You can change the used directory by setting the `BOYL_CONFIG` environment variable. Be aware that previous configuration will be lost unless you manually move existing configuration files to the new location.
+
+[dirs]: https://lib.rs/crates/dirs
+
 ### The copy operation is very slow.
 
 I have tried but failed to speed it up, and could not find better approaches

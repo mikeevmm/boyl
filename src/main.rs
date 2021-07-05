@@ -71,9 +71,12 @@ struct MakeCommand {
     #[argh(option, short = 'l', default = "None", from_str_fn(to_some_user_path))]
     /// what directory to copy as a template [default: <current dir.>]
     location: Option<userpath::UserDir>,
-    #[argh(option)]
+    #[argh(option, short = 'd')]
     /// description of the template [default: None]
     description: Option<String>,
+    #[argh(switch)]
+    /// include all files from `location` without asking
+    all: bool,
 }
 
 /// Wrapper around `userpath::to_user_path` to use with `argh`.
@@ -147,6 +150,7 @@ fn main() {
                     std::env::current_dir().expect("Could not determine current directory.")
                 }),
                 make.description,
+                make.all,
             );
             config::write_config_or_fail(&config);
         }
